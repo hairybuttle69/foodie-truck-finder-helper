@@ -1,7 +1,11 @@
 
-import { MapPinIcon, CalendarIcon } from "lucide-react";
+import { MapPinIcon, CalendarIcon, MessageSquare } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { useState } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { ReviewForm } from "./ReviewForm";
+import { ReviewCard } from "./ReviewCard";
 
 interface TruckCardProps {
   name: string;
@@ -12,6 +16,27 @@ interface TruckCardProps {
 }
 
 export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardProps) => {
+  const [reviews, setReviews] = useState([
+    {
+      author: "John D.",
+      rating: 4,
+      comment: "Great tacos and friendly service!",
+      date: "2 days ago"
+    }
+  ]);
+
+  const handleReviewSubmit = (review: { rating: number; comment: string }) => {
+    setReviews([
+      {
+        author: "You",
+        rating: review.rating,
+        comment: review.comment,
+        date: "Just now"
+      },
+      ...reviews
+    ]);
+  };
+
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in">
       <div className="relative h-48">
@@ -47,6 +72,30 @@ export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardP
           <Button className="flex-1" variant="outline">View Menu</Button>
           <Button className="flex-1">Order Now</Button>
         </div>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Reviews ({reviews.length})
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Reviews for {name}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 space-y-6">
+              <ReviewForm onSubmit={handleReviewSubmit} />
+              <div className="space-y-4">
+                {reviews.map((review, index) => (
+                  <ReviewCard key={index} {...review} />
+                ))}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </Card>
   );
