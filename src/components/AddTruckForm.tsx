@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { PlusCircle } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 export const AddTruckForm = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ export const AddTruckForm = () => {
     description: "",
     address: "",
     schedule: "",
+    type: "foodtruck" as "foodtruck" | "restaurant",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,17 +40,38 @@ export const AddTruckForm = () => {
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>Add New Food Truck</SheetTitle>
+          <SheetTitle>Add New Establishment</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleSubmit} className="space-y-6 pt-8">
           <div className="space-y-2">
-            <Label htmlFor="name">Truck Name</Label>
+            <Label>Type</Label>
+            <RadioGroup
+              defaultValue="foodtruck"
+              onValueChange={(value) => 
+                setFormData(prev => ({ ...prev, type: value as "foodtruck" | "restaurant" }))
+              }
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="foodtruck" id="foodtruck" />
+                <Label htmlFor="foodtruck">Food Truck</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="restaurant" id="restaurant" />
+                <Label htmlFor="restaurant">Hole-in-the-Wall</Label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              {formData.type === "foodtruck" ? "Truck Name" : "Restaurant Name"}
+            </Label>
             <Input
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter truck name"
+              placeholder="Enter name"
             />
           </div>
           <div className="space-y-2">
@@ -68,7 +91,7 @@ export const AddTruckForm = () => {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Describe your food truck"
+              placeholder="Describe your establishment"
             />
           </div>
           <div className="space-y-2">
@@ -78,7 +101,7 @@ export const AddTruckForm = () => {
               name="address"
               value={formData.address}
               onChange={handleChange}
-              placeholder="Enter truck location"
+              placeholder="Enter location"
             />
           </div>
           <div className="space-y-2">
@@ -92,7 +115,7 @@ export const AddTruckForm = () => {
             />
           </div>
           <Button type="submit" className="w-full">
-            Add Food Truck
+            Add {formData.type === "foodtruck" ? "Food Truck" : "Restaurant"}
           </Button>
         </form>
       </SheetContent>
