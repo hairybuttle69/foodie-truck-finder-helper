@@ -21,17 +21,25 @@ export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardP
       author: "John D.",
       rating: 4,
       comment: "Great tacos and friendly service!",
-      date: "2 days ago"
+      date: "2 days ago",
+      media: []
     }
   ]);
 
-  const handleReviewSubmit = (review: { rating: number; comment: string }) => {
+  const handleReviewSubmit = async (review: { rating: number; comment: string; media?: File[] }) => {
+    // Convert Files to URLs (in a real app, these would be uploaded to a server)
+    const mediaUrls = await Promise.all((review.media || []).map(async (file) => ({
+      type: file.type.startsWith('image/') ? 'image' as const : 'video' as const,
+      url: URL.createObjectURL(file)
+    })));
+
     setReviews([
       {
         author: "You",
         rating: review.rating,
         comment: review.comment,
-        date: "Just now"
+        date: "Just now",
+        media: mediaUrls
       },
       ...reviews
     ]);
