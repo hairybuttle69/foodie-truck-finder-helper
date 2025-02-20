@@ -1,5 +1,6 @@
 
 import { TruckCard } from "./TruckCard";
+import { CateringCard } from "./CateringCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 export const TruckList = () => {
@@ -52,6 +53,7 @@ export const TruckList = () => {
           <TabsList>
             <TabsTrigger value="foodtrucks">Food Trucks</TabsTrigger>
             <TabsTrigger value="restaurants">Hole-in-the-Wall</TabsTrigger>
+            <TabsTrigger value="catering">Catering</TabsTrigger>
           </TabsList>
         </div>
         
@@ -67,6 +69,20 @@ export const TruckList = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {restaurants.map((restaurant) => (
               <TruckCard key={restaurant.name} {...restaurant} />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="catering" className="mt-0">
+          <div className="max-w-2xl mx-auto mb-6">
+            <p className="text-center text-gray-600">
+              Looking to cater your next event? Our food trucks offer custom catering packages 
+              for parties, corporate events, weddings, and more!
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trucks.map((truck) => (
+              <CateringCard key={truck.name} {...truck} />
             ))}
           </div>
         </TabsContent>
