@@ -10,23 +10,44 @@ export const Map = () => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // We'll implement the map in the next iteration
-    // For now we'll just show a placeholder
-    const mapPlaceholder = document.createElement("div");
-    mapPlaceholder.className = "w-full h-full bg-gray-200 flex items-center justify-center";
-    mapPlaceholder.textContent = "Map coming soon...";
-    mapContainer.current.appendChild(mapPlaceholder);
+    // Please enter your Mapbox token here
+    mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN';
+    
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [-74.5, 40], // Default to US center
+      zoom: 4
+    });
+
+    // Add navigation controls
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    // Get user location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (map.current) {
+            map.current.flyTo({
+              center: [position.coords.longitude, position.coords.latitude],
+              zoom: 11
+            });
+          }
+        },
+        (error) => {
+          console.log("Error getting location:", error);
+        }
+      );
+    }
 
     return () => {
-      if (mapContainer.current) {
-        mapContainer.current.innerHTML = "";
-      }
+      map.current?.remove();
     };
   }, []);
 
   return (
-    <div className="relative w-full h-[400px]">
-      <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
+    <div className="relative w-full h-[calc(100vh-4rem)]">
+      <div ref={mapContainer} className="absolute inset-0" />
     </div>
   );
 };
