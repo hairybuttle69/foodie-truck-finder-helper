@@ -13,7 +13,8 @@ console.log("Clerk key available:", !!PUBLISHABLE_KEY);
 createRoot(document.getElementById("root")!).render(
   <ClerkProvider 
     publishableKey={PUBLISHABLE_KEY}
-    navigate={(to) => window.location.href = to}
+    routing="path"
+    navigationFallback={<div>Loading...</div>}
   >
     <App />
   </ClerkProvider>
