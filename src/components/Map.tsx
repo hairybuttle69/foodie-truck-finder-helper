@@ -12,54 +12,41 @@ export const Map = () => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize mapbox with a placeholder token or environment variable
-    const mapboxToken = 'pk.eyJ1IjoibG92YWJsZS1haS1tYXBzIiwiYSI6ImNsdWxscmRsYTA2ZzkyanA3bHFuaW0zbHYifQ.a3ryRRYZ8XwSGz5L6maVfg';
+    // Please enter your Mapbox token here
+    mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN';
     
-    if (!mapboxToken) {
-      console.error('Mapbox token is missing');
-      toast.error("Map functionality limited. No Mapbox token provided.");
-      return;
-    }
-    
-    mapboxgl.accessToken = mapboxToken;
-    
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-74.5, 40], // Default to US center
-        zoom: 4
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [-74.5, 40], // Default to US center
+      zoom: 4
+    });
+
+    // Add navigation controls
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    // Check if we have permission to access location
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        setLocationPermissionState(result.state as "granted" | "denied" | "prompt");
+        
+        // If permission is already granted, get location
+        if (result.state === 'granted') {
+          getUserLocation();
+        } else if (result.state === 'prompt') {
+          // Show a more friendly prompt to the user
+          toast.message("Enable location services", {
+            description: "For the best experience, allow location access to find food trucks near you",
+            action: {
+              label: "Enable",
+              onClick: () => getUserLocation()
+            }
+          });
+        }
       });
-
-      // Add navigation controls
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-      // Check if we have permission to access location
-      if (navigator.permissions) {
-        navigator.permissions.query({ name: 'geolocation' }).then(result => {
-          setLocationPermissionState(result.state as "granted" | "denied" | "prompt");
-          
-          // If permission is already granted, get location
-          if (result.state === 'granted') {
-            getUserLocation();
-          } else if (result.state === 'prompt') {
-            // Show a more friendly prompt to the user
-            toast.message("Enable location services", {
-              description: "For the best experience, allow location access to find food trucks near you",
-              action: {
-                label: "Enable",
-                onClick: () => getUserLocation()
-              }
-            });
-          }
-        });
-      } else {
-        // Fallback for browsers that don't support permissions API
-        getUserLocation();
-      }
-    } catch (error) {
-      console.error("Error initializing map:", error);
-      toast.error("There was a problem loading the map");
+    } else {
+      // Fallback for browsers that don't support permissions API
+      getUserLocation();
     }
 
     return () => {
