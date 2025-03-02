@@ -1,8 +1,14 @@
-
 import { TruckCard } from "./TruckCard";
 import { CateringCard } from "./CateringCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useState } from "react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "./ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 export const TruckList = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -69,7 +75,6 @@ export const TruckList = () => {
     }
   ];
 
-  // Helper function to filter by cuisine type
   const filterByCuisine = (items, cuisineType) => {
     if (cuisineType === "all") return items;
     return items.filter(item => item.cuisine === cuisineType);
@@ -78,6 +83,8 @@ export const TruckList = () => {
   const filteredTrucks = filterByCuisine(trucks, activeTab);
   const filteredRestaurants = filterByCuisine(restaurants, activeTab);
 
+  const cuisineTypes = ["all", "Mexican", "American", "Japanese", "Italian", "Healthy"];
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <Tabs defaultValue="foodtrucks" className="space-y-6">
@@ -90,55 +97,23 @@ export const TruckList = () => {
               <TabsTrigger value="catering">Catering</TabsTrigger>
             </TabsList>
             
-            <TabsList className="mt-2 sm:mt-0">
-              <TabsTrigger 
-                value="cuisine-filter" 
-                className="hidden" 
-                aria-hidden="true"
-              />
-              <TabsTrigger 
-                value="all"
-                onClick={() => setActiveTab("all")}
-                data-state={activeTab === "all" ? "active" : "inactive"}
-              >
-                All
-              </TabsTrigger>
-              <TabsTrigger 
-                value="Mexican"
-                onClick={() => setActiveTab("Mexican")}
-                data-state={activeTab === "Mexican" ? "active" : "inactive"}
-              >
-                Mexican
-              </TabsTrigger>
-              <TabsTrigger 
-                value="American"
-                onClick={() => setActiveTab("American")}
-                data-state={activeTab === "American" ? "active" : "inactive"}
-              >
-                American
-              </TabsTrigger>
-              <TabsTrigger 
-                value="Japanese"
-                onClick={() => setActiveTab("Japanese")}
-                data-state={activeTab === "Japanese" ? "active" : "inactive"}
-              >
-                Japanese
-              </TabsTrigger>
-              <TabsTrigger 
-                value="Italian"
-                onClick={() => setActiveTab("Italian")}
-                data-state={activeTab === "Italian" ? "active" : "inactive"}
-              >
-                Italian
-              </TabsTrigger>
-              <TabsTrigger 
-                value="Healthy"
-                onClick={() => setActiveTab("Healthy")}
-                data-state={activeTab === "Healthy" ? "active" : "inactive"}
-              >
-                Healthy
-              </TabsTrigger>
-            </TabsList>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center justify-between px-4 py-2 rounded-md border bg-background hover:bg-accent">
+                <span>Cuisine: {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                {cuisineTypes.map((cuisine) => (
+                  <DropdownMenuItem 
+                    key={cuisine}
+                    onClick={() => setActiveTab(cuisine)}
+                    className={activeTab === cuisine ? "bg-accent" : ""}
+                  >
+                    {cuisine === "all" ? "All Cuisines" : cuisine}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         
