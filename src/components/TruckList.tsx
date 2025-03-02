@@ -97,36 +97,42 @@ export const TruckList = () => {
                 aria-hidden="true"
               />
               <TabsTrigger 
+                value="all"
                 onClick={() => setActiveTab("all")}
                 data-state={activeTab === "all" ? "active" : "inactive"}
               >
                 All
               </TabsTrigger>
               <TabsTrigger 
+                value="Mexican"
                 onClick={() => setActiveTab("Mexican")}
                 data-state={activeTab === "Mexican" ? "active" : "inactive"}
               >
                 Mexican
               </TabsTrigger>
               <TabsTrigger 
+                value="American"
                 onClick={() => setActiveTab("American")}
                 data-state={activeTab === "American" ? "active" : "inactive"}
               >
                 American
               </TabsTrigger>
               <TabsTrigger 
+                value="Japanese"
                 onClick={() => setActiveTab("Japanese")}
                 data-state={activeTab === "Japanese" ? "active" : "inactive"}
               >
                 Japanese
               </TabsTrigger>
               <TabsTrigger 
+                value="Italian"
                 onClick={() => setActiveTab("Italian")}
                 data-state={activeTab === "Italian" ? "active" : "inactive"}
               >
                 Italian
               </TabsTrigger>
               <TabsTrigger 
+                value="Healthy"
                 onClick={() => setActiveTab("Healthy")}
                 data-state={activeTab === "Healthy" ? "active" : "inactive"}
               >
