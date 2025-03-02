@@ -11,11 +11,7 @@ const PUBLISHABLE_KEY = 'pk_test_Y2xldmVyLXRhaHItMTEuY2xlcmsuYWNjb3VudHMuZGV2JA'
 console.log("Clerk key available:", !!PUBLISHABLE_KEY);
 
 createRoot(document.getElementById("root")!).render(
-  <ClerkProvider 
-    publishableKey={PUBLISHABLE_KEY}
-    routing="path"
-    navigationFallback={<div>Loading...</div>}
-  >
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
     <App />
   </ClerkProvider>
 );
