@@ -1,11 +1,14 @@
 
-import { MapPinIcon, CalendarIcon, MessageSquare } from "lucide-react";
+import { MapPinIcon, CalendarIcon, MessageSquare, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { ReviewForm } from "./ReviewForm";
 import { ReviewCard } from "./ReviewCard";
+import { Calendar as CalendarComponent } from "./ui/calendar";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 interface TruckCardProps {
   name: string;
@@ -26,6 +29,13 @@ export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardP
     }
   ]);
 
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [locations, setLocations] = useState<Record<string, string>>({
+    [new Date().toISOString().split('T')[0]]: "Main St & 5th Ave",
+    [new Date(Date.now() + 86400000).toISOString().split('T')[0]]: "Downtown Food Court"
+  });
+  const [newLocation, setNewLocation] = useState("");
+
   const handleReviewSubmit = async (review: { rating: number; comment: string; media?: File[] }) => {
     // Convert Files to URLs (in a real app, these would be uploaded to a server)
     const mediaUrls = await Promise.all((review.media || []).map(async (file) => ({
@@ -44,6 +54,20 @@ export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardP
       ...reviews
     ]);
   };
+
+  const handleLocationUpdate = () => {
+    if (!selectedDate || !newLocation.trim()) return;
+    
+    const dateKey = selectedDate.toISOString().split('T')[0];
+    setLocations(prev => ({
+      ...prev,
+      [dateKey]: newLocation
+    }));
+    setNewLocation("");
+  };
+
+  const currentDateKey = selectedDate?.toISOString().split('T')[0];
+  const currentLocation = currentDateKey ? locations[currentDateKey] : undefined;
 
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in">
@@ -80,30 +104,92 @@ export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardP
           <Button className="flex-1" variant="outline">View Menu</Button>
           <Button className="flex-1">Order Now</Button>
         </div>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <MessageSquare className="w-4 h-4" />
-              Reviews ({reviews.length})
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Reviews for {name}</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 space-y-6">
-              <ReviewForm onSubmit={handleReviewSubmit} />
-              <div className="space-y-4">
-                {reviews.map((review, index) => (
-                  <ReviewCard key={index} {...review} />
-                ))}
+
+        <div className="flex space-x-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Locations
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>{name} - Locations Schedule</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-6">
+                <div className="flex flex-col space-y-4">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    className="rounded-md border"
+                  />
+                  
+                  {currentDateKey && (
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <h4 className="font-medium mb-1">
+                        {selectedDate?.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                      </h4>
+                      <p className="text-sm">
+                        {currentLocation ? (
+                          <span className="flex items-center">
+                            <MapPinIcon className="w-4 h-4 mr-1 text-secondary" />
+                            {currentLocation}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground italic">No location scheduled</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Update Location</Label>
+                    <div className="flex space-x-2">
+                      <Input 
+                        id="location"
+                        value={newLocation} 
+                        onChange={(e) => setNewLocation(e.target.value)}
+                        placeholder="Enter location for selected date"
+                        className="flex-1"
+                      />
+                      <Button onClick={handleLocationUpdate}>Save</Button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Reviews ({reviews.length})
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Reviews for {name}</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-6">
+                <ReviewForm onSubmit={handleReviewSubmit} />
+                <div className="space-y-4">
+                  {reviews.map((review, index) => (
+                    <ReviewCard key={index} {...review} />
+                  ))}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </Card>
   );
