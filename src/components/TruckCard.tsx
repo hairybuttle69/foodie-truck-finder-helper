@@ -1,5 +1,5 @@
 
-import { MapPinIcon, CalendarIcon, MessageSquare, Calendar } from "lucide-react";
+import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useState } from "react";
@@ -9,6 +9,7 @@ import { ReviewCard } from "./ReviewCard";
 import { Calendar as CalendarComponent } from "./ui/calendar";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { toast } from "sonner";
 
 interface TruckCardProps {
   name: string;
@@ -16,9 +17,17 @@ interface TruckCardProps {
   distance: string;
   image: string;
   status: "open" | "closed";
+  isDeveloperMode?: boolean;
 }
 
-export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardProps) => {
+export const TruckCard = ({ 
+  name, 
+  cuisine, 
+  distance, 
+  image, 
+  status, 
+  isDeveloperMode = false 
+}: TruckCardProps) => {
   const [reviews, setReviews] = useState([
     {
       author: "John D.",
@@ -66,11 +75,27 @@ export const TruckCard = ({ name, cuisine, distance, image, status }: TruckCardP
     setNewLocation("");
   };
 
+  const handleDelete = () => {
+    // This would typically connect to a backend service
+    // For now we'll just show a toast notification
+    toast.success(`${name} has been deleted`);
+  };
+
   const currentDateKey = selectedDate?.toISOString().split('T')[0];
   const currentLocation = currentDateKey ? locations[currentDateKey] : undefined;
 
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in">
+      {isDeveloperMode && (
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          className="absolute top-2 left-2 z-10"
+          onClick={handleDelete}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
       <div className="relative h-48">
         <img
           src={image}

@@ -5,8 +5,9 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ImagePlus } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { toast } from "sonner";
 
 export const AddTruckForm = () => {
   const [formData, setFormData] = useState({
@@ -17,11 +18,26 @@ export const AddTruckForm = () => {
     schedule: "",
     type: "foodtruck" as "foodtruck" | "restaurant",
   });
+  const [imageUrl, setImageUrl] = useState("/placeholder.svg");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // We'll implement this when we add Supabase integration
-    console.log("Form submitted:", formData);
+    console.log("Form submitted:", formData, "Image:", imageFile);
+    toast.success(`${formData.name} added successfully!`);
+    
+    // Reset form after submission
+    setFormData({
+      name: "",
+      cuisine: "",
+      description: "",
+      address: "",
+      schedule: "",
+      type: "foodtruck",
+    });
+    setImageUrl("/placeholder.svg");
+    setImageFile(null);
   };
 
   const handleChange = (
@@ -29,6 +45,15 @@ export const AddTruckForm = () => {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const imageObjectUrl = URL.createObjectURL(file);
+      setImageUrl(imageObjectUrl);
+    }
   };
 
   return (
@@ -62,6 +87,32 @@ export const AddTruckForm = () => {
               </div>
             </RadioGroup>
           </div>
+          
+          <div className="space-y-4">
+            <div className="flex flex-col items-center">
+              <img 
+                src={imageUrl} 
+                alt="Preview" 
+                className="w-full h-48 object-cover rounded-md mb-2"
+              />
+              <div className="w-full">
+                <Label htmlFor="image" className="cursor-pointer w-full">
+                  <div className="flex items-center justify-center space-x-2 bg-muted p-3 rounded-md border border-dashed hover:bg-muted/80 transition-colors">
+                    <ImagePlus className="h-5 w-5" />
+                    <span>{imageFile ? 'Change Image' : 'Upload Image'}</span>
+                  </div>
+                  <Input 
+                    id="image" 
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                </Label>
+              </div>
+            </div>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="name">
               {formData.type === "foodtruck" ? "Truck Name" : "Restaurant Name"}

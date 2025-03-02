@@ -1,3 +1,4 @@
+
 import { TruckCard } from "./TruckCard";
 import { CateringCard } from "./CateringCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -10,7 +11,11 @@ import {
 } from "./ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
-export const TruckList = () => {
+interface TruckListProps {
+  isDeveloperMode?: boolean;
+}
+
+export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
   const [activeTab, setActiveTab] = useState("all");
 
   const trucks = [
@@ -121,7 +126,7 @@ export const TruckList = () => {
           {filteredTrucks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTrucks.map((truck) => (
-                <TruckCard key={truck.name} {...truck} />
+                <TruckCard key={truck.name} {...truck} isDeveloperMode={isDeveloperMode} />
               ))}
             </div>
           ) : (
@@ -135,7 +140,7 @@ export const TruckList = () => {
           {filteredRestaurants.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRestaurants.map((restaurant) => (
-                <TruckCard key={restaurant.name} {...restaurant} />
+                <TruckCard key={restaurant.name} {...restaurant} isDeveloperMode={isDeveloperMode} />
               ))}
             </div>
           ) : (

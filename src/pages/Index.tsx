@@ -5,6 +5,7 @@ import { Map } from "@/components/Map";
 import { AddTruckForm } from "@/components/AddTruckForm";
 import { VendorDashboard } from "@/components/vendor/VendorDashboard";
 import { useState } from "react";
+import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   const [showMap, setShowMap] = useState(false);
@@ -30,7 +31,7 @@ const Index = () => {
               <Map />
             ) : (
               <div className="pb-8 pt-4">
-                <TruckList />
+                <TruckList isDeveloperMode={isDeveloperMode} />
               </div>
             )}
             {/* Only show the AddTruckForm when in developer mode */}
@@ -38,6 +39,7 @@ const Index = () => {
           </>
         )}
       </main>
+      <Toaster />
     </div>
   );
 };
