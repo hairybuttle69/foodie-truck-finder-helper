@@ -9,6 +9,7 @@ import { useState } from "react";
 const Index = () => {
   const [showMap, setShowMap] = useState(false);
   const [isVendorMode, setIsVendorMode] = useState(false);
+  const [isDeveloperMode, setIsDeveloperMode] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -17,6 +18,8 @@ const Index = () => {
         showMap={showMap} 
         isVendorMode={isVendorMode}
         onVendorModeToggle={() => setIsVendorMode(!isVendorMode)}
+        isDeveloperMode={isDeveloperMode}
+        onDeveloperModeToggle={() => setIsDeveloperMode(!isDeveloperMode)}
       />
       <main className="pt-16">
         {isVendorMode ? (
@@ -30,7 +33,8 @@ const Index = () => {
                 <TruckList />
               </div>
             )}
-            <AddTruckForm />
+            {/* Only show the AddTruckForm when in developer mode */}
+            {isDeveloperMode && <AddTruckForm />}
           </>
         )}
       </main>
