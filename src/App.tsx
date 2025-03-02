@@ -8,11 +8,11 @@ import { ClerkLoaded, ClerkLoading, SignedIn, SignedOut, useUser } from "@clerk/
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient();
 
-// Simple loading component that doesn't get stuck
+// Improved loading component with fallback timeout
 const LoadingScreen = () => (
   <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
@@ -21,14 +21,32 @@ const LoadingScreen = () => (
 );
 
 const AuthenticatedRoutes = () => {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const [authChecked, setAuthChecked] = useState(false);
   
-  // Add initial logging to see what's happening
+  // Add initial logging to debug authentication state
   useEffect(() => {
-    console.log("Auth state:", { isLoaded, isSignedIn });
-  }, [isLoaded, isSignedIn]);
+    console.log("Auth state:", { isLoaded, isSignedIn, userId: user?.id });
+    
+    // Set a timeout to prevent indefinite loading state
+    const timer = setTimeout(() => {
+      if (!authChecked) {
+        console.log("Auth check timeout reached, forcing render");
+        setAuthChecked(true);
+      }
+    }, 3000);
+    
+    // If auth is loaded, clear timeout and set checked
+    if (isLoaded) {
+      clearTimeout(timer);
+      setAuthChecked(true);
+    }
+    
+    return () => clearTimeout(timer);
+  }, [isLoaded, isSignedIn, user, authChecked]);
 
-  if (!isLoaded) {
+  // Show loading only for a reasonable time
+  if (!isLoaded && !authChecked) {
     return <LoadingScreen />;
   }
 

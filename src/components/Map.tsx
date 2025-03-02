@@ -15,7 +15,7 @@ export const Map = () => {
     // Initialize mapbox with a placeholder token or environment variable
     const mapboxToken = 'pk.eyJ1IjoibG92YWJsZS1haS1tYXBzIiwiYSI6ImNsdWxscmRsYTA2ZzkyanA3bHFuaW0zbHYifQ.a3ryRRYZ8XwSGz5L6maVfg';
     
-    if (!mapboxToken || mapboxToken === 'YOUR_MAPBOX_TOKEN') {
+    if (!mapboxToken) {
       console.error('Mapbox token is missing');
       toast.error("Map functionality limited. No Mapbox token provided.");
       return;
