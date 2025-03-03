@@ -9,7 +9,7 @@ import { ReviewCard } from "./ReviewCard";
 import { Calendar as CalendarComponent } from "./ui/calendar";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { toast } from "sonner";
+import { toast } from "./ui/use-toast";
 
 interface TruckCardProps {
   name: string;
@@ -77,20 +77,22 @@ export const TruckCard = ({
 
   const handleDelete = () => {
     // This would typically connect to a backend service
-    // For now we'll just show a toast notification
-    toast.success(`${name} has been deleted`);
+    toast({
+      title: "Establishment deleted",
+      description: `${name} has been removed from the listings.`,
+    });
   };
 
   const currentDateKey = selectedDate?.toISOString().split('T')[0];
   const currentLocation = currentDateKey ? locations[currentDateKey] : undefined;
 
   return (
-    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in relative">
       {isDeveloperMode && (
         <Button 
           variant="destructive" 
           size="sm" 
-          className="absolute top-2 left-2 z-10"
+          className="absolute top-2 right-2 z-10 opacity-90 hover:opacity-100"
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />
