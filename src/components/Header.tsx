@@ -29,8 +29,11 @@ export const Header = ({
   onDeveloperModeToggle
 }: HeaderProps) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleDeveloperModeToggle = () => {
+    setMenuOpen(false); // Close the dropdown menu first
+    
     if (!isDeveloperMode) {
       // If not in developer mode, show login modal
       setShowLoginModal(true);
@@ -38,6 +41,11 @@ export const Header = ({
       // If already in developer mode, simply toggle it off
       onDeveloperModeToggle();
     }
+  };
+
+  const handleVendorModeToggle = () => {
+    setMenuOpen(false); // Close the dropdown menu first
+    onVendorModeToggle();
   };
 
   return (
@@ -71,7 +79,7 @@ export const Header = ({
             </Button>
           )}
 
-          <DropdownMenu>
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-2">
                 <MenuIcon className="w-5 h-5" />
@@ -83,7 +91,7 @@ export const Header = ({
               <DropdownMenuItem>Favorites</DropdownMenuItem>
               <DropdownMenuItem>Order History</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onVendorModeToggle}>
+              <DropdownMenuItem onClick={handleVendorModeToggle}>
                 {isVendorMode ? "Switch to Customer Mode" : "Switch to Vendor Mode"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleDeveloperModeToggle}>
