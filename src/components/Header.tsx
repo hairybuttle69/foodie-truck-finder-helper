@@ -1,6 +1,7 @@
 
 import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon } from "lucide-react";
 import { Button } from "./ui/button";
+import { useState } from "react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -8,6 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "./ui/dropdown-menu";
+import { LoginModal } from "./LoginModal";
 
 interface HeaderProps {
   onMapToggle: () => void;
@@ -26,6 +28,18 @@ export const Header = ({
   isDeveloperMode,
   onDeveloperModeToggle
 }: HeaderProps) => {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleDeveloperModeToggle = () => {
+    if (!isDeveloperMode) {
+      // If not in developer mode, show login modal
+      setShowLoginModal(true);
+    } else {
+      // If already in developer mode, simply toggle it off
+      onDeveloperModeToggle();
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -72,7 +86,7 @@ export const Header = ({
               <DropdownMenuItem onClick={onVendorModeToggle}>
                 {isVendorMode ? "Switch to Customer Mode" : "Switch to Vendor Mode"}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDeveloperModeToggle}>
+              <DropdownMenuItem onClick={handleDeveloperModeToggle}>
                 {isDeveloperMode ? "Exit Developer Mode" : "Enter Developer Mode"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -82,6 +96,15 @@ export const Header = ({
           </DropdownMenu>
         </nav>
       </div>
+
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+        onSuccess={() => {
+          setShowLoginModal(false);
+          onDeveloperModeToggle();
+        }} 
+      />
     </header>
   );
 };
