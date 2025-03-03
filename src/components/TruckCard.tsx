@@ -1,4 +1,3 @@
-
 import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -46,7 +45,6 @@ export const TruckCard = ({
   const [newLocation, setNewLocation] = useState("");
 
   const handleReviewSubmit = async (review: { rating: number; comment: string; media?: File[] }) => {
-    // Convert Files to URLs (in a real app, these would be uploaded to a server)
     const mediaUrls = await Promise.all((review.media || []).map(async (file) => ({
       type: file.type.startsWith('image/') ? 'image' as const : 'video' as const,
       url: URL.createObjectURL(file)
@@ -76,7 +74,6 @@ export const TruckCard = ({
   };
 
   const handleDelete = () => {
-    // This would typically connect to a backend service
     toast({
       title: "Establishment deleted",
       description: `${name} has been removed from the listings.`,
@@ -92,7 +89,7 @@ export const TruckCard = ({
         <Button 
           variant="destructive" 
           size="sm" 
-          className="absolute top-2 right-2 z-10 opacity-90 hover:opacity-100"
+          className="absolute top-2 left-2 z-10 opacity-90 hover:opacity-100"
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />
