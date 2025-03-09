@@ -1,5 +1,5 @@
 
-import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon } from "lucide-react";
+import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon, LogIn } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { 
@@ -10,6 +10,9 @@ import {
   DropdownMenuTrigger 
 } from "./ui/dropdown-menu";
 import { LoginModal } from "./LoginModal";
+import { AuthSheet } from "./auth/AuthSheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "./auth/UserAvatar";
 
 interface HeaderProps {
   onMapToggle: () => void;
@@ -29,7 +32,10 @@ export const Header = ({
   onDeveloperModeToggle
 }: HeaderProps) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAuthSheet, setShowAuthSheet] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  const { user } = useAuth();
 
   const handleDeveloperModeToggle = () => {
     setMenuOpen(false); // Close the dropdown menu first
@@ -45,6 +51,13 @@ export const Header = ({
 
   const handleVendorModeToggle = () => {
     setMenuOpen(false); // Close the dropdown menu first
+    
+    // Only allow vendor mode when authenticated
+    if (!user && !isVendorMode) {
+      setShowAuthSheet(true);
+      return;
+    }
+    
     onVendorModeToggle();
   };
 
@@ -75,22 +88,39 @@ export const Header = ({
               onClick={onMapToggle}
             >
               <MapIcon className="w-5 h-5" />
-              <span>{showMap ? "List View" : "Map View"}</span>
+              <span className="hidden sm:inline">{showMap ? "List View" : "Map View"}</span>
             </Button>
+          )}
+
+          {!user ? (
+            <Button 
+              onClick={() => setShowAuthSheet(true)}
+              variant="ghost"
+              className="flex items-center space-x-2"
+            >
+              <LogIn className="w-5 h-5" />
+              <span className="hidden sm:inline">Sign In</span>
+            </Button>
+          ) : (
+            <UserAvatar />
           )}
 
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-2">
                 <MenuIcon className="w-5 h-5" />
-                <span>Menu</span>
+                <span className="hidden sm:inline">Menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Favorites</DropdownMenuItem>
-              <DropdownMenuItem>Order History</DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {user && (
+                <>
+                  <DropdownMenuItem>Profile</DropdownMenuItem>
+                  <DropdownMenuItem>Favorites</DropdownMenuItem>
+                  <DropdownMenuItem>Order History</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={handleVendorModeToggle}>
                 {isVendorMode ? "Switch to Customer Mode" : "Switch to Vendor Mode"}
               </DropdownMenuItem>
@@ -112,6 +142,11 @@ export const Header = ({
           setShowLoginModal(false);
           onDeveloperModeToggle();
         }} 
+      />
+      
+      <AuthSheet 
+        isOpen={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
       />
     </header>
   );
