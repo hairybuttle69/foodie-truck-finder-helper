@@ -1,5 +1,5 @@
 
-import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon, LogIn } from "lucide-react";
+import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { 
@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger 
 } from "./ui/dropdown-menu";
 import { LoginModal } from "./LoginModal";
-import { AuthSheet } from "./auth/AuthSheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "./auth/UserAvatar";
 
@@ -32,10 +31,9 @@ export const Header = ({
   onDeveloperModeToggle
 }: HeaderProps) => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showAuthSheet, setShowAuthSheet] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleDeveloperModeToggle = () => {
     setMenuOpen(false); // Close the dropdown menu first
@@ -51,13 +49,6 @@ export const Header = ({
 
   const handleVendorModeToggle = () => {
     setMenuOpen(false); // Close the dropdown menu first
-    
-    // Only allow vendor mode when authenticated
-    if (!user && !isVendorMode) {
-      setShowAuthSheet(true);
-      return;
-    }
-    
     onVendorModeToggle();
   };
 
@@ -92,18 +83,7 @@ export const Header = ({
             </Button>
           )}
 
-          {!user ? (
-            <Button 
-              onClick={() => setShowAuthSheet(true)}
-              variant="ghost"
-              className="flex items-center space-x-2"
-            >
-              <LogIn className="w-5 h-5" />
-              <span className="hidden sm:inline">Sign In</span>
-            </Button>
-          ) : (
-            <UserAvatar />
-          )}
+          <UserAvatar />
 
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
@@ -130,6 +110,12 @@ export const Header = ({
               <DropdownMenuSeparator />
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Help & Support</DropdownMenuItem>
+              {user && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>Sign Out</DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
@@ -142,11 +128,6 @@ export const Header = ({
           setShowLoginModal(false);
           onDeveloperModeToggle();
         }} 
-      />
-      
-      <AuthSheet 
-        isOpen={showAuthSheet}
-        onClose={() => setShowAuthSheet(false)}
       />
     </header>
   );

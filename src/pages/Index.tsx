@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { TruckList } from "@/components/TruckList";
 import { Map } from "@/components/Map";
@@ -8,6 +7,8 @@ import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthSheet } from "@/components/auth/AuthSheet";
+import { VendorAssignmentManager } from "@/components/developer/VendorAssignmentManager";
+import { getLocationsByVendor } from "@/utils/vendorManagement";
 
 interface Location {
   address: string;
@@ -28,12 +29,7 @@ const Index = () => {
   // Check if the user needs to authenticate when first loading the app
   useEffect(() => {
     if (!isLoading && !user) {
-      // Auto-show auth sheet on first load if user is not logged in
-      const hasSeenAuthPrompt = localStorage.getItem('hasSeenAuthPrompt');
-      if (!hasSeenAuthPrompt) {
-        setShowAuthPrompt(true);
-        localStorage.setItem('hasSeenAuthPrompt', 'true');
-      }
+      setShowAuthPrompt(true);
     }
   }, [isLoading, user]);
 
@@ -79,10 +75,38 @@ const Index = () => {
     }));
   };
 
+  // Filter trucks based on vendor assignments if in vendor mode
+  const getVendorTrucks = () => {
+    if (!user || !isVendorMode) return truckData;
+    
+    const assignedTruckIds = getLocationsByVendor(user.id);
+    return truckData.filter(truck => assignedTruckIds.includes(truck.id));
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  // If user is not logged in, show auth prompt
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header 
+          onMapToggle={() => setShowMap(!showMap)} 
+          showMap={showMap} 
+          isVendorMode={isVendorMode}
+          onVendorModeToggle={() => setIsVendorMode(!isVendorMode)}
+          isDeveloperMode={isDeveloperMode}
+          onDeveloperModeToggle={() => setIsDeveloperMode(!isDeveloperMode)}
+        />
+        <AuthSheet 
+          isOpen={showAuthPrompt}
+          onClose={() => {}} // No close option - force login
+        />
       </div>
     );
   }
@@ -99,20 +123,7 @@ const Index = () => {
       />
       <main className="pt-16">
         {isVendorMode ? (
-          user ? (
-            <VendorDashboard />
-          ) : (
-            <div className="container mx-auto px-4 py-8 text-center">
-              <h2 className="text-2xl font-bold mb-4">Sign in required</h2>
-              <p className="mb-4">You need to sign in to access Vendor Mode.</p>
-              <button 
-                onClick={() => setShowAuthPrompt(true)}
-                className="px-4 py-2 bg-primary text-white rounded-md"
-              >
-                Sign In
-              </button>
-            </div>
-          )
+          <VendorDashboard vendorTrucks={getVendorTrucks()} />
         ) : (
           <>
             {showMap ? (
@@ -125,17 +136,17 @@ const Index = () => {
                 />
               </div>
             )}
-            {/* Only show the AddTruckForm when in developer mode */}
-            {isDeveloperMode && <AddTruckForm />}
+            {/* Show AddTruckForm and VendorAssignmentManager in developer mode */}
+            {isDeveloperMode && (
+              <div className="container mx-auto px-4">
+                <VendorAssignmentManager trucks={truckData} />
+                <AddTruckForm />
+              </div>
+            )}
           </>
         )}
       </main>
       <Toaster />
-      
-      <AuthSheet 
-        isOpen={showAuthPrompt}
-        onClose={() => setShowAuthPrompt(false)}
-      />
     </div>
   );
 };
