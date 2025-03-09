@@ -3,17 +3,29 @@ import { Button } from "./ui/button";
 import { Locate } from "lucide-react";
 import { toast } from "./ui/use-toast";
 
-interface MapProps {
-  trucks?: {
-    name: string;
-    cuisine: string;
-    location?: [number, number]; // [longitude, latitude]
-  }[];
+interface Location {
+  address: string;
+  coordinates: [number, number]; // [longitude, latitude]
 }
 
-export const Map = ({ trucks = [] }: MapProps) => {
+interface TruckMapData {
+  id: string;
+  name: string;
+  cuisine: string;
+  location?: [number, number]; // [longitude, latitude]
+  // For our dynamic locations storage
+  locations?: Record<string, Location>;
+}
+
+interface MapProps {
+  trucks?: TruckMapData[];
+  truckLocations?: Record<string, Record<string, Location>>;
+}
+
+export const Map = ({ trucks = [], truckLocations = {} }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     // Request user's location when the component mounts
@@ -68,6 +80,36 @@ export const Map = ({ trucks = [] }: MapProps) => {
     }
   };
 
+  // Get all available truck locations for the selected date
+  const getVisibleTrucks = () => {
+    let visibleTrucks: Array<{name: string, coordinates: [number, number], cuisine: string}> = [];
+    
+    // First add trucks with static locations
+    trucks.forEach(truck => {
+      if (truck.location) {
+        visibleTrucks.push({
+          name: truck.name,
+          coordinates: truck.location,
+          cuisine: truck.cuisine
+        });
+      }
+    });
+    
+    // Then add trucks with dynamic locations for the selected date
+    Object.entries(truckLocations).forEach(([truckName, datesToLocations]) => {
+      if (datesToLocations[selectedDate]) {
+        const matchingTruck = trucks.find(t => t.name === truckName);
+        visibleTrucks.push({
+          name: truckName,
+          coordinates: datesToLocations[selectedDate].coordinates,
+          cuisine: matchingTruck?.cuisine || 'Unknown'
+        });
+      }
+    });
+    
+    return visibleTrucks;
+  };
+
   // Generate OpenStreetMap URL with markers for all trucks
   const generateMapUrl = () => {
     // Default location (center of US) if no trucks or user location
@@ -75,16 +117,18 @@ export const Map = ({ trucks = [] }: MapProps) => {
     let centerLon = -98.5795;
     let zoom = 4;
     
+    const visibleTrucks = getVisibleTrucks();
+    
     // If user location is available, center on that
     if (userLocation) {
       centerLat = userLocation[1];
       centerLon = userLocation[0];
       zoom = 13;
     } 
-    // Otherwise if we have trucks, center on first truck
-    else if (trucks.length > 0 && trucks[0].location) {
-      centerLat = trucks[0].location[1];
-      centerLon = trucks[0].location[0];
+    // Otherwise if we have trucks with locations, center on first truck
+    else if (visibleTrucks.length > 0) {
+      centerLat = visibleTrucks[0].coordinates[1];
+      centerLon = visibleTrucks[0].coordinates[0];
       zoom = 13;
     }
     
@@ -98,6 +142,14 @@ export const Map = ({ trucks = [] }: MapProps) => {
     
     return mapUrl;
   };
+
+  // Handle date change for viewing truck locations
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedDate(e.target.value);
+  };
+
+  // Get visible trucks for the current selected date
+  const visibleTrucks = getVisibleTrucks();
 
   return (
     <div className="relative w-full h-[calc(100vh-4rem)]">
@@ -114,35 +166,6 @@ export const Map = ({ trucks = [] }: MapProps) => {
           title="Food Truck Map"
           className="rounded-md"
         />
-        
-        {/* Truck marker overlays */}
-        <div className="absolute inset-0 pointer-events-none">
-          {trucks.map((truck, index) => {
-            if (!truck.location) return null;
-            
-            // This is a simplified representation since we can't add custom markers directly to the iframe
-            return (
-              <div 
-                key={index}
-                className="absolute z-10 bg-primary text-white px-2 py-1 rounded-md transform -translate-x-1/2 -translate-y-full pointer-events-auto hover:z-20"
-                style={{ 
-                  // This is a rough estimation for positioning - in a real app would need more precise calculation
-                  left: '50%',
-                  top: '50%',
-                  display: 'none' // Hide these markers since we can't precisely position them on the iframe
-                }}
-                onClick={() => {
-                  toast({
-                    title: truck.name,
-                    description: `${truck.cuisine} food truck`
-                  });
-                }}
-              >
-                {truck.name}
-              </div>
-            );
-          })}
-        </div>
       </div>
       
       <div className="absolute bottom-4 right-4 z-10">
@@ -155,17 +178,39 @@ export const Map = ({ trucks = [] }: MapProps) => {
         </Button>
       </div>
       
+      {/* Date selector */}
+      <div className="absolute top-4 right-4 z-10 bg-white/90 p-2 rounded-md shadow-md">
+        <input 
+          type="date" 
+          value={selectedDate}
+          onChange={handleDateChange}
+          className="p-1 rounded border"
+        />
+      </div>
+      
       {/* Truck list overlay */}
       <div className="absolute top-4 left-4 z-10 bg-white/90 p-4 rounded-md shadow-md max-w-xs max-h-[70vh] overflow-y-auto">
-        <h3 className="font-medium text-lg mb-2">Food Trucks</h3>
-        <ul className="space-y-2">
-          {trucks.map((truck, index) => (
-            <li key={index} className="border-b pb-2 last:border-0">
-              <strong>{truck.name}</strong>
-              <p className="text-sm text-gray-600">{truck.cuisine}</p>
-            </li>
-          ))}
-        </ul>
+        <h3 className="font-medium text-lg mb-2">
+          Food Trucks ({selectedDate})
+          <span className="text-sm font-normal ml-2 text-gray-500">
+            {visibleTrucks.length} available
+          </span>
+        </h3>
+        {visibleTrucks.length > 0 ? (
+          <ul className="space-y-2">
+            {visibleTrucks.map((truck, index) => (
+              <li key={index} className="border-b pb-2 last:border-0">
+                <strong>{truck.name}</strong>
+                <p className="text-sm text-gray-600">{truck.cuisine}</p>
+                <p className="text-xs text-gray-500">
+                  {truck.coordinates[1].toFixed(4)}, {truck.coordinates[0].toFixed(4)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 text-sm">No trucks available on this date.</p>
+        )}
       </div>
     </div>
   );

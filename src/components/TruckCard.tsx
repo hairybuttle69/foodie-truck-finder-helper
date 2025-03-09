@@ -1,3 +1,4 @@
+
 import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -10,22 +11,31 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "./ui/use-toast";
 
+interface Location {
+  address: string;
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
 interface TruckCardProps {
+  id?: string;
   name: string;
   cuisine: string;
   distance: string;
   image: string;
   status: "open" | "closed";
   isDeveloperMode?: boolean;
+  onLocationUpdate?: (truckName: string, date: string, location: Location) => void;
 }
 
 export const TruckCard = ({ 
+  id = crypto.randomUUID(),
   name, 
   cuisine, 
   distance, 
   image, 
   status, 
-  isDeveloperMode = false 
+  isDeveloperMode = false,
+  onLocationUpdate
 }: TruckCardProps) => {
   const [reviews, setReviews] = useState([
     {
@@ -38,11 +48,20 @@ export const TruckCard = ({
   ]);
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [locations, setLocations] = useState<Record<string, string>>({
-    [new Date().toISOString().split('T')[0]]: "Main St & 5th Ave",
-    [new Date(Date.now() + 86400000).toISOString().split('T')[0]]: "Downtown Food Court"
+  const [locations, setLocations] = useState<Record<string, Location>>({
+    [new Date().toISOString().split('T')[0]]: {
+      address: "Main St & 5th Ave",
+      coordinates: [-74.005, 40.7128] // NYC coordinates as default
+    },
+    [new Date(Date.now() + 86400000).toISOString().split('T')[0]]: {
+      address: "Downtown Food Court",
+      coordinates: [-74.008, 40.7138] // Slightly offset from default
+    }
   });
   const [newLocation, setNewLocation] = useState("");
+  // Geolocation input for coordinates
+  const [newLongitude, setNewLongitude] = useState("-74.005");
+  const [newLatitude, setNewLatitude] = useState("40.7128");
 
   const handleReviewSubmit = async (review: { rating: number; comment: string; media?: File[] }) => {
     const mediaUrls = await Promise.all((review.media || []).map(async (file) => ({
@@ -65,12 +84,45 @@ export const TruckCard = ({
   const handleLocationUpdate = () => {
     if (!selectedDate || !newLocation.trim()) return;
     
-    const dateKey = selectedDate.toISOString().split('T')[0];
-    setLocations(prev => ({
-      ...prev,
-      [dateKey]: newLocation
-    }));
-    setNewLocation("");
+    try {
+      // Parse coordinates from inputs
+      const lng = parseFloat(newLongitude);
+      const lat = parseFloat(newLatitude);
+      
+      // Validate coordinates
+      if (isNaN(lng) || isNaN(lat) || lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+        throw new Error("Invalid coordinates");
+      }
+      
+      const dateKey = selectedDate.toISOString().split('T')[0];
+      const newLocationData = {
+        address: newLocation,
+        coordinates: [lng, lat] as [number, number]
+      };
+      
+      setLocations(prev => ({
+        ...prev,
+        [dateKey]: newLocationData
+      }));
+      
+      // Call the callback if provided
+      if (onLocationUpdate) {
+        onLocationUpdate(name, dateKey, newLocationData);
+      }
+      
+      toast({
+        title: "Location updated",
+        description: `${name} will be at ${newLocation} on ${selectedDate.toLocaleDateString()}`
+      });
+      
+      setNewLocation("");
+    } catch (error) {
+      toast({
+        title: "Invalid coordinates",
+        description: "Please enter valid longitude (-180 to 180) and latitude (-90 to 90) values.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDelete = () => {
@@ -160,9 +212,14 @@ export const TruckCard = ({
                       </h4>
                       <p className="text-sm">
                         {currentLocation ? (
-                          <span className="flex items-center">
-                            <MapPinIcon className="w-4 h-4 mr-1 text-secondary" />
-                            {currentLocation}
+                          <span className="flex flex-col">
+                            <span className="flex items-center">
+                              <MapPinIcon className="w-4 h-4 mr-1 text-secondary" />
+                              {currentLocation.address}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-5 mt-1">
+                              Coordinates: {currentLocation.coordinates[1]}, {currentLocation.coordinates[0]}
+                            </span>
                           </span>
                         ) : (
                           <span className="text-muted-foreground italic">No location scheduled</span>
@@ -173,16 +230,36 @@ export const TruckCard = ({
                   
                   <div className="space-y-2">
                     <Label htmlFor="location">Update Location</Label>
-                    <div className="flex space-x-2">
-                      <Input 
-                        id="location"
-                        value={newLocation} 
-                        onChange={(e) => setNewLocation(e.target.value)}
-                        placeholder="Enter location for selected date"
-                        className="flex-1"
-                      />
-                      <Button onClick={handleLocationUpdate}>Save</Button>
+                    <Input 
+                      id="location"
+                      value={newLocation} 
+                      onChange={(e) => setNewLocation(e.target.value)}
+                      placeholder="Enter location address"
+                      className="mb-2"
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <Label htmlFor="longitude" className="text-xs">Longitude</Label>
+                        <Input 
+                          id="longitude"
+                          value={newLongitude}
+                          onChange={(e) => setNewLongitude(e.target.value)}
+                          placeholder="-74.005"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="latitude" className="text-xs">Latitude</Label>
+                        <Input 
+                          id="latitude"
+                          value={newLatitude}
+                          onChange={(e) => setNewLatitude(e.target.value)}
+                          placeholder="40.7128"
+                        />
+                      </div>
                     </div>
+                    
+                    <Button onClick={handleLocationUpdate} className="w-full">Save Location</Button>
                   </div>
                 </div>
               </div>

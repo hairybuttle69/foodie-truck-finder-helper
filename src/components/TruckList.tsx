@@ -11,15 +11,32 @@ import {
 } from "./ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
-interface TruckListProps {
-  isDeveloperMode?: boolean;
+interface Location {
+  address: string;
+  coordinates: [number, number]; // [longitude, latitude]
 }
 
-export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
+interface TruckData {
+  id?: string;
+  name: string;
+  cuisine: string;
+  distance: string;
+  image: string;
+  status: "open" | "closed";
+  location?: [number, number];
+}
+
+interface TruckListProps {
+  isDeveloperMode?: boolean;
+  onLocationUpdate?: (truckName: string, date: string, location: Location) => void;
+}
+
+export const TruckList = ({ isDeveloperMode = false, onLocationUpdate }: TruckListProps) => {
   const [activeTab, setActiveTab] = useState("all");
 
   const trucks = [
     {
+      id: "1",
       name: "Taco Time",
       cuisine: "Mexican",
       distance: "0.2 miles",
@@ -27,6 +44,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
       status: "open" as const,
     },
     {
+      id: "2",
       name: "Burger Bliss",
       cuisine: "American",
       distance: "0.5 miles",
@@ -34,6 +52,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
       status: "open" as const,
     },
     {
+      id: "3",
       name: "Sushi Roll",
       cuisine: "Japanese",
       distance: "0.8 miles",
@@ -41,6 +60,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
       status: "closed" as const,
     },
     {
+      id: "4",
       name: "Green Goodness",
       cuisine: "Healthy",
       distance: "0.4 miles",
@@ -48,6 +68,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
       status: "open" as const,
     },
     {
+      id: "5",
       name: "Fresh & Fit",
       cuisine: "Healthy",
       distance: "0.7 miles",
@@ -58,6 +79,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
 
   const restaurants = [
     {
+      id: "6",
       name: "Hidden Gem Diner",
       cuisine: "American",
       distance: "0.3 miles",
@@ -65,6 +87,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
       status: "open" as const,
     },
     {
+      id: "7",
       name: "Little Italy",
       cuisine: "Italian",
       distance: "0.6 miles",
@@ -72,6 +95,7 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
       status: "open" as const,
     },
     {
+      id: "8",
       name: "Salad Station",
       cuisine: "Healthy",
       distance: "0.5 miles",
@@ -126,7 +150,13 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
           {filteredTrucks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTrucks.map((truck) => (
-                <TruckCard key={truck.name} {...truck} isDeveloperMode={isDeveloperMode} />
+                <TruckCard 
+                  key={truck.id}
+                  id={truck.id} 
+                  {...truck} 
+                  isDeveloperMode={isDeveloperMode}
+                  onLocationUpdate={onLocationUpdate}
+                />
               ))}
             </div>
           ) : (
@@ -140,7 +170,13 @@ export const TruckList = ({ isDeveloperMode = false }: TruckListProps) => {
           {filteredRestaurants.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRestaurants.map((restaurant) => (
-                <TruckCard key={restaurant.name} {...restaurant} isDeveloperMode={isDeveloperMode} />
+                <TruckCard 
+                  key={restaurant.id} 
+                  id={restaurant.id}
+                  {...restaurant} 
+                  isDeveloperMode={isDeveloperMode}
+                  onLocationUpdate={onLocationUpdate} 
+                />
               ))}
             </div>
           ) : (
