@@ -11,6 +11,34 @@ const Index = () => {
   const [showMap, setShowMap] = useState(false);
   const [isVendorMode, setIsVendorMode] = useState(false);
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
+  
+  // Sample truck data with locations - in a real app this would come from an API
+  const truckData = [
+    {
+      name: "Taco Time",
+      cuisine: "Mexican",
+      distance: "0.2 miles",
+      image: "/placeholder.svg",
+      status: "open" as const,
+      location: [-74.006, 40.7128] // NYC
+    },
+    {
+      name: "Burger Bliss",
+      cuisine: "American",
+      distance: "0.5 miles",
+      image: "/placeholder.svg",
+      status: "open" as const,
+      location: [-118.2437, 34.0522] // LA
+    },
+    {
+      name: "Sushi Roll",
+      cuisine: "Japanese",
+      distance: "0.8 miles",
+      image: "/placeholder.svg",
+      status: "closed" as const,
+      location: [-87.6298, 41.8781] // Chicago
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -28,7 +56,7 @@ const Index = () => {
         ) : (
           <>
             {showMap ? (
-              <Map />
+              <Map trucks={truckData} />
             ) : (
               <div className="pb-8 pt-4">
                 <TruckList isDeveloperMode={isDeveloperMode} />
