@@ -11,16 +11,17 @@ import { Apple, Mail, Loader2, ArrowRight } from "lucide-react";
 
 interface AuthSheetProps {
   isOpen: boolean;
+  onClose: () => void;
 }
 
-export const AuthSheet = ({ isOpen }: AuthSheetProps) => {
+export const AuthSheet = ({ isOpen, onClose }: AuthSheetProps) => {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle, signInWithApple, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +33,7 @@ export const AuthSheet = ({ isOpen }: AuthSheetProps) => {
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
+      onClose();
     } catch (error) {
       toast({
         title: "Sign in failed",
@@ -53,6 +55,7 @@ export const AuthSheet = ({ isOpen }: AuthSheetProps) => {
         title: "Account created",
         description: "Your account has been successfully created!",
       });
+      onClose();
     } catch (error) {
       toast({
         title: "Sign up failed",
@@ -72,6 +75,7 @@ export const AuthSheet = ({ isOpen }: AuthSheetProps) => {
         title: "Welcome!",
         description: "You've successfully signed in with Google.",
       });
+      onClose();
     } catch (error) {
       toast({
         title: "Google sign-in failed",
@@ -91,6 +95,7 @@ export const AuthSheet = ({ isOpen }: AuthSheetProps) => {
         title: "Welcome!",
         description: "You've successfully signed in with Apple.",
       });
+      onClose();
     } catch (error) {
       toast({
         title: "Apple sign-in failed",
@@ -102,14 +107,9 @@ export const AuthSheet = ({ isOpen }: AuthSheetProps) => {
     }
   };
 
-  // Don't render the sheet if the user is already authenticated
-  if (user) {
-    return null;
-  }
-
   return (
-    <Sheet open={isOpen} onOpenChange={() => {}}>
-      <SheetContent side="bottom" className="h-[85vh] sm:max-w-md sm:h-screen rounded-t-xl sm:rounded-none mx-auto" closeable={false}>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="bottom" className="h-[85vh] sm:max-w-md sm:h-screen rounded-t-xl sm:rounded-none mx-auto">
         <SheetHeader className="mb-5">
           <SheetTitle className="text-2xl">Welcome to The Spot</SheetTitle>
         </SheetHeader>
