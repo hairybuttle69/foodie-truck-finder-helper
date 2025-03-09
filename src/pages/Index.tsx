@@ -20,7 +20,7 @@ const Index = () => {
       distance: "0.2 miles",
       image: "/placeholder.svg",
       status: "open" as const,
-      location: [-74.006, 40.7128] // NYC
+      location: [-74.006, 40.7128] as [number, number] // NYC - explicit tuple type
     },
     {
       name: "Burger Bliss",
@@ -28,7 +28,7 @@ const Index = () => {
       distance: "0.5 miles",
       image: "/placeholder.svg",
       status: "open" as const,
-      location: [-118.2437, 34.0522] // LA
+      location: [-118.2437, 34.0522] as [number, number] // LA - explicit tuple type
     },
     {
       name: "Sushi Roll",
@@ -36,7 +36,7 @@ const Index = () => {
       distance: "0.8 miles",
       image: "/placeholder.svg",
       status: "closed" as const,
-      location: [-87.6298, 41.8781] // Chicago
+      location: [-87.6298, 41.8781] as [number, number] // Chicago - explicit tuple type
     }
   ];
 

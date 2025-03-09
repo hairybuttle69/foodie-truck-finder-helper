@@ -1,10 +1,6 @@
-
 import React, { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "./ui/button";
-import { MapPin, Locate } from "lucide-react";
-import { Input } from "./ui/input";
+import { Locate } from "lucide-react";
 import { toast } from "./ui/use-toast";
 
 interface MapProps {
@@ -17,157 +13,47 @@ interface MapProps {
 
 export const Map = ({ trucks = [] }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState(() => {
-    return localStorage.getItem("mapbox_token") || "";
-  });
-  const [tokenInput, setTokenInput] = useState(mapboxToken);
-  const [mapLoaded, setMapLoaded] = useState(false);
-
-  const initializeMap = () => {
-    if (!mapContainer.current || !mapboxToken) return;
-    
-    try {
-      mapboxgl.accessToken = mapboxToken;
-      
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-74.5, 40], // Default to US center
-        zoom: 4
-      });
-
-      // Add navigation controls
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-      map.current.on('load', () => {
-        setMapLoaded(true);
-        
-        // Get user location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              if (map.current) {
-                map.current.flyTo({
-                  center: [position.coords.longitude, position.coords.latitude],
-                  zoom: 11
-                });
-                
-                // Add a marker for user location
-                new mapboxgl.Marker({ color: "#4B56D2" })
-                  .setLngLat([position.coords.longitude, position.coords.latitude])
-                  .setPopup(new mapboxgl.Popup().setHTML("<h3>You are here</h3>"))
-                  .addTo(map.current);
-              }
-            },
-            (error) => {
-              console.log("Error getting location:", error);
-              toast({
-                title: "Location error",
-                description: "Could not get your location. Using default view.",
-                variant: "destructive"
-              });
-            }
-          );
-        }
-      });
-    } catch (error) {
-      console.error("Mapbox initialization error:", error);
-      toast({
-        title: "Map error",
-        description: "There was an error initializing the map. Please check your Mapbox token.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Add sample truck locations if no real data
-  const sampleLocations = [
-    { name: "Taco Time", cuisine: "Mexican", location: [-74.006, 40.7128] }, // NYC
-    { name: "Burger Bliss", cuisine: "American", location: [-122.4194, 37.7749] }, // SF
-    { name: "Sushi Roll", cuisine: "Japanese", location: [-87.6298, 41.8781] }, // Chicago
-    { name: "Green Goodness", cuisine: "Healthy", location: [-118.2437, 34.0522] } // LA
-  ];
-
-  const displayTruckLocations = () => {
-    if (!map.current || !mapLoaded) return;
-    
-    const trucksToDisplay = trucks.length > 0 && trucks[0].location ? 
-      trucks : sampleLocations;
-    
-    trucksToDisplay.forEach(truck => {
-      if (!truck.location) return;
-      
-      // Create a popup with truck info
-      const popup = new mapboxgl.Popup({ offset: 25 })
-        .setHTML(`
-          <h3 class="font-medium">${truck.name}</h3>
-          <p class="text-sm">${truck.cuisine}</p>
-          <button class="text-sm text-indigo-600 hover:text-indigo-800">
-            View menu
-          </button>
-        `);
-      
-      // Add marker for each truck
-      new mapboxgl.Marker({ color: "#10b981" })
-        .setLngLat(truck.location)
-        .setPopup(popup)
-        .addTo(map.current);
-    });
-  };
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
   useEffect(() => {
-    if (mapboxToken) {
-      initializeMap();
-    }
-    
-    return () => {
-      map.current?.remove();
-    };
-  }, [mapboxToken]);
-
-  useEffect(() => {
-    if (mapLoaded) {
-      displayTruckLocations();
-    }
-  }, [mapLoaded, trucks]);
-
-  const handleSaveToken = () => {
-    if (tokenInput.trim()) {
-      localStorage.setItem("mapbox_token", tokenInput);
-      setMapboxToken(tokenInput);
-      
-      if (map.current) {
-        map.current.remove();
-      }
-      
-      toast({
-        title: "Token saved",
-        description: "Your Mapbox token has been saved. Initializing map...",
-      });
-      
-      initializeMap();
-    } else {
-      toast({
-        title: "Token required",
-        description: "Please enter a valid Mapbox token",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleLocateMe = () => {
-    if (!map.current) return;
-    
+    // Request user's location when the component mounts
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          if (map.current) {
-            map.current.flyTo({
-              center: [position.coords.longitude, position.coords.latitude],
-              zoom: 14,
-              essential: true
-            });
+          setUserLocation([position.coords.longitude, position.coords.latitude]);
+          
+          toast({
+            title: "Location found",
+            description: "Using your current location for the map view.",
+          });
+        },
+        (error) => {
+          console.log("Error getting location:", error);
+          toast({
+            title: "Location not available",
+            description: "Could not get your location. Using default view.",
+            variant: "destructive"
+          });
+        }
+      );
+    }
+  }, []);
+
+  // Function to handle the "locate me" button click
+  const handleLocateMe = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.longitude, position.coords.latitude]);
+          
+          // Center the map on user's location
+          if (mapContainer.current) {
+            const iframe = mapContainer.current.querySelector('iframe');
+            if (iframe) {
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+              iframe.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.01},${lat-0.01},${lon+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lon}`;
+            }
           }
         },
         (error) => {
@@ -182,41 +68,105 @@ export const Map = ({ trucks = [] }: MapProps) => {
     }
   };
 
+  // Generate OpenStreetMap URL with markers for all trucks
+  const generateMapUrl = () => {
+    // Default location (center of US) if no trucks or user location
+    let centerLat = 39.8283;
+    let centerLon = -98.5795;
+    let zoom = 4;
+    
+    // If user location is available, center on that
+    if (userLocation) {
+      centerLat = userLocation[1];
+      centerLon = userLocation[0];
+      zoom = 13;
+    } 
+    // Otherwise if we have trucks, center on first truck
+    else if (trucks.length > 0 && trucks[0].location) {
+      centerLat = trucks[0].location[1];
+      centerLon = trucks[0].location[0];
+      zoom = 13;
+    }
+    
+    // Base map URL
+    let mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${centerLon-0.1},${centerLat-0.1},${centerLon+0.1},${centerLat+0.1}&layer=mapnik&zoom=${zoom}`;
+    
+    // Add user location marker if available
+    if (userLocation) {
+      mapUrl += `&marker=${userLocation[1]},${userLocation[0]}`;
+    }
+    
+    return mapUrl;
+  };
+
   return (
     <div className="relative w-full h-[calc(100vh-4rem)]">
-      {!mapboxToken ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 p-4">
-          <div className="max-w-md w-full space-y-4 bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-medium">Mapbox Token Required</h3>
-            <p className="text-sm text-gray-600">
-              To use the map feature, you need to provide a Mapbox token. 
-              You can get one for free at <a href="https://www.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a>.
-            </p>
-            <Input
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="Paste your Mapbox token here"
-              className="w-full"
-            />
-            <Button onClick={handleSaveToken} className="w-full">
-              Save Token & Load Map
-            </Button>
-          </div>
+      <div ref={mapContainer} className="absolute inset-0">
+        <iframe 
+          width="100%" 
+          height="100%" 
+          frameBorder="0" 
+          scrolling="no" 
+          marginHeight={0} 
+          marginWidth={0} 
+          src={generateMapUrl()} 
+          style={{ border: "1px solid #ccc" }}
+          title="Food Truck Map"
+          className="rounded-md"
+        />
+        
+        {/* Truck marker overlays */}
+        <div className="absolute inset-0 pointer-events-none">
+          {trucks.map((truck, index) => {
+            if (!truck.location) return null;
+            
+            // This is a simplified representation since we can't add custom markers directly to the iframe
+            return (
+              <div 
+                key={index}
+                className="absolute z-10 bg-primary text-white px-2 py-1 rounded-md transform -translate-x-1/2 -translate-y-full pointer-events-auto hover:z-20"
+                style={{ 
+                  // This is a rough estimation for positioning - in a real app would need more precise calculation
+                  left: '50%',
+                  top: '50%',
+                  display: 'none' // Hide these markers since we can't precisely position them on the iframe
+                }}
+                onClick={() => {
+                  toast({
+                    title: truck.name,
+                    description: `${truck.cuisine} food truck`
+                  });
+                }}
+              >
+                {truck.name}
+              </div>
+            );
+          })}
         </div>
-      ) : (
-        <>
-          <div ref={mapContainer} className="absolute inset-0" />
-          <div className="absolute bottom-4 right-4 z-10">
-            <Button
-              onClick={handleLocateMe}
-              className="rounded-full h-12 w-12 p-0"
-              variant="secondary"
-            >
-              <Locate className="h-5 w-5" />
-            </Button>
-          </div>
-        </>
-      )}
+      </div>
+      
+      <div className="absolute bottom-4 right-4 z-10">
+        <Button
+          onClick={handleLocateMe}
+          className="rounded-full h-12 w-12 p-0"
+          variant="secondary"
+        >
+          <Locate className="h-5 w-5" />
+        </Button>
+      </div>
+      
+      {/* Truck list overlay */}
+      <div className="absolute top-4 left-4 z-10 bg-white/90 p-4 rounded-md shadow-md max-w-xs max-h-[70vh] overflow-y-auto">
+        <h3 className="font-medium text-lg mb-2">Food Trucks</h3>
+        <ul className="space-y-2">
+          {trucks.map((truck, index) => (
+            <li key={index} className="border-b pb-2 last:border-0">
+              <strong>{truck.name}</strong>
+              <p className="text-sm text-gray-600">{truck.cuisine}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
