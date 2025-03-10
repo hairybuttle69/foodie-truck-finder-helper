@@ -1,5 +1,6 @@
 import { toast } from "@/components/ui/use-toast";
 import { MenuItem } from "./vendorManagement";
+import { processStripePayment } from "./stripeIntegration";
 
 export interface CustomerInfo {
   name: string;
@@ -34,6 +35,7 @@ export interface Order {
   updatedAt: Date;
   paymentStatus: "processing" | "completed" | "failed";
   transactionId?: string;
+  paymentProcessor?: "stripe" | "manual";
 }
 
 export interface OrderRequest {
@@ -47,6 +49,7 @@ export interface OrderRequest {
   subtotal: number;
   commission: number;
   total: number;
+  stripePaymentMethodId?: string;
 }
 
 export interface VendorAccount {
@@ -80,6 +83,10 @@ const processPaymentWithGateway = async (
   paymentMethod: string, 
   cardDetails?: CardDetails
 ): Promise<{ success: boolean; transactionId?: string; error?: string }> => {
+  if (paymentMethod.includes('stripe')) {
+    return { success: true, transactionId: `processed_outside` };
+  }
+  
   return new Promise((resolve) => {
     setTimeout(() => {
       const isSuccessful = Math.random() < 0.9;
@@ -326,12 +333,27 @@ export const processOrder = async (orderRequest: OrderRequest): Promise<Order> =
     cardDetails, 
     subtotal, 
     commission, 
-    total 
+    total,
+    stripePaymentMethodId
   } = orderRequest;
   
   initializeVendorAccount(vendorId);
   
-  const paymentResult = await processPaymentWithGateway(total, paymentMethod, cardDetails);
+  let paymentResult;
+  let paymentProcessor: "stripe" | "manual" = "manual";
+  
+  if (stripePaymentMethodId) {
+    paymentProcessor = "stripe";
+    
+    paymentResult = await processStripePayment(
+      stripePaymentMethodId,
+      total * 100,
+      'usd',
+      `Order for ${truckName}`
+    );
+  } else {
+    paymentResult = await processPaymentWithGateway(total, paymentMethod, cardDetails);
+  }
   
   if (!paymentResult.success) {
     throw new Error(paymentResult.error || "Payment processing failed");
@@ -351,6 +373,7 @@ export const processOrder = async (orderRequest: OrderRequest): Promise<Order> =
     status: "pending",
     paymentStatus: "completed",
     transactionId: paymentResult.transactionId,
+    paymentProcessor,
     createdAt: new Date(),
     updatedAt: new Date()
   };

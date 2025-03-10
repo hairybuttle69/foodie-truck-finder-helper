@@ -10,6 +10,9 @@ import { CheckCircle, CreditCard, Smartphone, Loader2 } from "lucide-react";
 import { MenuItem } from "@/utils/vendorManagement";
 import { processOrder } from "@/utils/orderManagement";
 import { toast } from "./ui/use-toast";
+import { Elements, useStripe, useElements } from "@stripe/react-stripe-js";
+import { stripePromise, createPaymentMethod, prepareStripePayment, processStripePayment } from "@/utils/stripeIntegration";
+import { StripeCardForm } from "./payments/StripeCardForm";
 
 interface OrderItem extends MenuItem {
   quantity: number;
@@ -23,7 +26,17 @@ interface OrderFormProps {
   onClose: () => void;
 }
 
-export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: OrderFormProps) => {
+// Wrapper component that provides Stripe context
+export const OrderForm = (props: OrderFormProps) => {
+  return (
+    <Elements stripe={stripePromise}>
+      <OrderFormContent {...props} />
+    </Elements>
+  );
+};
+
+// Main component inside Stripe context
+const OrderFormContent = ({ truckId, truckName, vendorId, menuItems, onClose }: OrderFormProps) => {
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"credit-card" | "apple-pay" | "google-pay">("credit-card");
   const [customerInfo, setCustomerInfo] = useState({
@@ -43,6 +56,11 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
     orderNumber: "",
     orderTime: new Date()
   });
+  const [cardError, setCardError] = useState<string | null>(null);
+  
+  // Get Stripe objects from the context
+  const stripe = useStripe();
+  const elements = useElements();
   
   const availableItems = menuItems.filter(item => item.available);
   
@@ -117,12 +135,24 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
     }
   };
 
+  const handleCardChange = (event: any) => {
+    setCardError(event.error ? event.error.message : null);
+  };
+
   const handleSubmitOrder = async () => {
-    if (paymentMethod === "credit-card" && 
-        (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvc)) {
+    if (!stripe || !elements) {
       toast({
-        title: "Missing payment information",
-        description: "Please fill in all payment details to continue.",
+        title: "Payment system unavailable",
+        description: "The payment system is currently unavailable. Please try again later.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (paymentMethod === "credit-card" && cardError) {
+      toast({
+        title: "Invalid card details",
+        description: cardError,
         variant: "destructive"
       });
       return;
@@ -131,6 +161,47 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
     setIsProcessing(true);
 
     try {
+      let paymentProcessResult;
+      
+      if (paymentMethod === "credit-card") {
+        // Create a payment method using Stripe Elements
+        const paymentMethodResult = await createPaymentMethod(stripe, elements);
+        
+        if (!paymentMethodResult.success) {
+          throw new Error(paymentMethodResult.error || "Failed to create payment method");
+        }
+        
+        // Prepare the order details for Stripe
+        const stripePaymentDetails = prepareStripePayment({
+          truckId,
+          truckName,
+          vendorId,
+          items: selectedItems,
+          customerInfo,
+          paymentMethod,
+          subtotal,
+          commission,
+          total
+        });
+        
+        // Process the payment with Stripe
+        paymentProcessResult = await processStripePayment(
+          paymentMethodResult.paymentMethodId!,
+          stripePaymentDetails.amount,
+          stripePaymentDetails.currency,
+          stripePaymentDetails.description
+        );
+      } else {
+        // For Apple Pay and Google Pay, use the existing payment processing for now
+        // In a real implementation, you would use Stripe's Apple Pay and Google Pay integrations
+        paymentProcessResult = { success: true, transactionId: `tx_${Math.random().toString(36).substr(2, 9)}` };
+      }
+      
+      if (!paymentProcessResult.success) {
+        throw new Error(paymentProcessResult.error || "Payment processing failed");
+      }
+
+      // Process the order in the system
       const order = await processOrder({
         truckId,
         truckName,
@@ -374,40 +445,7 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
             </div>
             
             {paymentMethod === "credit-card" && (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input 
-                    id="number"
-                    name="number"
-                    value={cardDetails.number}
-                    onChange={handleCardDetailsChange}
-                    placeholder="1234 5678 9012 3456"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input 
-                      id="expiry"
-                      name="expiry"
-                      value={cardDetails.expiry}
-                      onChange={handleCardDetailsChange}
-                      placeholder="MM/YY"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvc">CVC</Label>
-                    <Input 
-                      id="cvc"
-                      name="cvc"
-                      value={cardDetails.cvc}
-                      onChange={handleCardDetailsChange}
-                      placeholder="123"
-                    />
-                  </div>
-                </div>
-              </div>
+              <StripeCardForm onChange={handleCardChange} />
             )}
             
             {(paymentMethod === "apple-pay" || paymentMethod === "google-pay") && (
@@ -433,7 +471,7 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
               <Button 
                 className="w-full" 
                 onClick={handleSubmitOrder}
-                disabled={isProcessing}
+                disabled={isProcessing || !stripe || !elements}
               >
                 {isProcessing ? (
                   <div className="flex items-center">
