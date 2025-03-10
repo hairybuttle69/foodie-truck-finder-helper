@@ -311,7 +311,6 @@ export const MenuItemsEditor: React.FC<MenuItemsEditorProps> = ({ truckId }) => 
                           checked={item.available}
                           onCheckedChange={() => toggleItemAvailability(item.id, item.available)}
                           className="mr-2"
-                          size="sm"
                         />
                         <Label htmlFor={`available-${item.id}`} className="text-xs">
                           {item.available ? 'Available' : 'Unavailable'}
@@ -328,3 +327,4 @@ export const MenuItemsEditor: React.FC<MenuItemsEditorProps> = ({ truckId }) => 
     </div>
   );
 };
+
