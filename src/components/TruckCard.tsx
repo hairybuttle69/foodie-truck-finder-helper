@@ -1,5 +1,4 @@
-
-import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2 } from "lucide-react";
+import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2, ImagePlus, Utensils } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useState } from "react";
@@ -10,6 +9,8 @@ import { Calendar as CalendarComponent } from "./ui/calendar";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "./ui/use-toast";
+import { updateTruckMainImage, fileToDataUrl } from "@/utils/vendorManagement";
+import { MenuItemsEditor } from "./developer/MenuItemsEditor";
 
 interface Location {
   address: string;
@@ -59,9 +60,9 @@ export const TruckCard = ({
     }
   });
   const [newLocation, setNewLocation] = useState("");
-  // Geolocation input for coordinates
   const [newLongitude, setNewLongitude] = useState("-74.005");
   const [newLatitude, setNewLatitude] = useState("40.7128");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleReviewSubmit = async (review: { rating: number; comment: string; media?: File[] }) => {
     const mediaUrls = await Promise.all((review.media || []).map(async (file) => ({
@@ -85,11 +86,9 @@ export const TruckCard = ({
     if (!selectedDate || !newLocation.trim()) return;
     
     try {
-      // Parse coordinates from inputs
       const lng = parseFloat(newLongitude);
       const lat = parseFloat(newLatitude);
       
-      // Validate coordinates
       if (isNaN(lng) || isNaN(lat) || lng < -180 || lng > 180 || lat < -90 || lat > 90) {
         throw new Error("Invalid coordinates");
       }
@@ -105,7 +104,6 @@ export const TruckCard = ({
         [dateKey]: newLocationData
       }));
       
-      // Call the callback if provided
       if (onLocationUpdate) {
         onLocationUpdate(name, dateKey, newLocationData);
       }
@@ -132,20 +130,62 @@ export const TruckCard = ({
     });
   };
 
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setUploadingImage(true);
+      const dataUrl = await fileToDataUrl(file);
+      await updateTruckMainImage(id, dataUrl);
+      
+      toast({
+        title: "Image updated",
+        description: `Main image for ${name} has been updated.`
+      });
+      
+      (e.target as HTMLInputElement).value = '';
+    } catch (error) {
+      toast({
+        title: "Error updating image",
+        description: "Failed to update the main image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const currentDateKey = selectedDate?.toISOString().split('T')[0];
   const currentLocation = currentDateKey ? locations[currentDateKey] : undefined;
 
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in relative">
       {isDeveloperMode && (
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          className="absolute top-2 left-2 z-10 opacity-90 hover:opacity-100"
-          onClick={handleDelete}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            className="absolute top-2 left-2 z-10 opacity-90 hover:opacity-100"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          
+          <Label htmlFor={`main-image-${id}`} className="absolute top-2 right-2 z-10">
+            <div className="bg-primary text-white rounded-md p-1 cursor-pointer opacity-90 hover:opacity-100">
+              <ImagePlus className="h-5 w-5" />
+            </div>
+            <Input 
+              id={`main-image-${id}`} 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleMainImageUpload}
+              disabled={uploadingImage}
+            />
+          </Label>
+        </>
       )}
       <div className="relative h-48">
         <img
@@ -291,6 +331,28 @@ export const TruckCard = ({
             </SheetContent>
           </Sheet>
         </div>
+        
+        {isDeveloperMode && (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="secondary"
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <Utensils className="w-4 h-4" />
+                Edit Menu Items
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-xl w-full">
+              <SheetHeader>
+                <SheetTitle>{name} - Menu Items</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <MenuItemsEditor truckId={id} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
     </Card>
   );

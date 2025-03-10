@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthSheet } from "@/components/auth/AuthSheet";
 import { VendorAssignmentManager } from "@/components/developer/VendorAssignmentManager";
-import { getLocationsByVendor } from "@/utils/vendorManagement";
+import { getLocationsByVendor, getTruckDetails } from "@/utils/vendorManagement";
 
 interface Location {
   address: string;
@@ -21,19 +21,16 @@ const Index = () => {
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   
-  // State to store truck locations by truck name and date
   const [truckLocations, setTruckLocations] = useState<Record<string, Record<string, Location>>>({});
   
   const { user, isLoading } = useAuth();
   
-  // Check if the user needs to authenticate when first loading the app
   useEffect(() => {
     if (!isLoading && !user) {
       setShowAuthPrompt(true);
     }
   }, [isLoading, user]);
 
-  // Sample truck data with locations - in a real app this would come from an API
   const truckData = [
     {
       id: "1",
@@ -64,7 +61,14 @@ const Index = () => {
     }
   ];
 
-  // Handle location updates from truck cards
+  const enhancedTruckData = truckData.map(truck => {
+    const storedDetails = getTruckDetails(truck.id);
+    return {
+      ...truck,
+      image: storedDetails?.mainImage || truck.image
+    };
+  });
+
   const handleLocationUpdate = (truckName: string, date: string, location: Location) => {
     setTruckLocations(prev => ({
       ...prev,
@@ -75,12 +79,11 @@ const Index = () => {
     }));
   };
 
-  // Filter trucks based on vendor assignments if in vendor mode
   const getVendorTrucks = () => {
-    if (!user || !isVendorMode) return truckData;
+    if (!user || !isVendorMode) return enhancedTruckData;
     
     const assignedTruckIds = getLocationsByVendor(user.id);
-    return truckData.filter(truck => assignedTruckIds.includes(truck.id));
+    return enhancedTruckData.filter(truck => assignedTruckIds.includes(truck.id));
   };
 
   if (isLoading) {
@@ -91,7 +94,6 @@ const Index = () => {
     );
   }
 
-  // If user is not logged in, show auth prompt
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -127,7 +129,7 @@ const Index = () => {
         ) : (
           <>
             {showMap ? (
-              <Map trucks={truckData} truckLocations={truckLocations} />
+              <Map trucks={enhancedTruckData} truckLocations={truckLocations} />
             ) : (
               <div className="pb-8 pt-4">
                 <TruckList 
@@ -136,10 +138,9 @@ const Index = () => {
                 />
               </div>
             )}
-            {/* Show AddTruckForm and VendorAssignmentManager in developer mode */}
             {isDeveloperMode && (
               <div className="container mx-auto px-4">
-                <VendorAssignmentManager trucks={truckData} />
+                <VendorAssignmentManager trucks={enhancedTruckData} />
                 <AddTruckForm />
               </div>
             )}
