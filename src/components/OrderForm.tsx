@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -168,6 +167,14 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
     setCurrentStep("select-items");
   };
 
+  const itemsByCategory: Record<string, MenuItem[]> = availableItems.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, MenuItem[]>);
+
   return (
     <div className="space-y-6">
       {currentStep === "select-items" && (
@@ -176,25 +183,7 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
           <ScrollArea className="h-[60vh]">
             <div className="space-y-6">
               {availableItems.length > 0 ? (
-                availableItems.reduce((acc, item) => {
-                  if (!acc[item.category]) {
-                    acc[item.category] = [];
-                  }
-                  acc[item.category].push(item);
-                  return acc;
-                }, {} as Record<string, MenuItem[]>)
-              ) : {}}
-              
-              {availableItems.length > 0 ? (
-                Object.entries(
-                  availableItems.reduce((acc, item) => {
-                    if (!acc[item.category]) {
-                      acc[item.category] = [];
-                    }
-                    acc[item.category].push(item);
-                    return acc;
-                  }, {} as Record<string, MenuItem[]>)
-                ).map(([category, items]) => (
+                Object.entries(itemsByCategory).map(([category, items]) => (
                   <div key={category} className="space-y-3">
                     <h4 className="text-base font-medium">{category}</h4>
                     <div className="space-y-2">
