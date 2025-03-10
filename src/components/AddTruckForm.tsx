@@ -8,6 +8,7 @@ import { Textarea } from "./ui/textarea";
 import { PlusCircle, ImagePlus } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { toast } from "sonner";
+import { updateTruckDetails, fileToDataUrl } from "@/utils/vendorManagement";
 
 export const AddTruckForm = () => {
   const [formData, setFormData] = useState({
@@ -21,23 +22,47 @@ export const AddTruckForm = () => {
   const [imageUrl, setImageUrl] = useState("/placeholder.svg");
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // We'll implement this when we add Supabase integration
-    console.log("Form submitted:", formData, "Image:", imageFile);
-    toast.success(`${formData.name} added successfully!`);
     
-    // Reset form after submission
-    setFormData({
-      name: "",
-      cuisine: "",
-      description: "",
-      address: "",
-      schedule: "",
-      type: "foodtruck",
-    });
-    setImageUrl("/placeholder.svg");
-    setImageFile(null);
+    try {
+      // Generate a unique ID for the new truck
+      const truckId = crypto.randomUUID();
+      
+      // Convert image file to data URL if one was selected
+      let mainImage = "/placeholder.svg";
+      if (imageFile) {
+        mainImage = await fileToDataUrl(imageFile);
+      }
+      
+      // Save the truck details
+      updateTruckDetails(truckId, {
+        name: formData.name,
+        type: formData.type,
+        cuisine: formData.cuisine,
+        description: formData.description,
+        address: formData.address,
+        schedule: formData.schedule,
+        mainImage: mainImage
+      });
+      
+      toast.success(`${formData.name} added successfully!`);
+      
+      // Reset form after submission
+      setFormData({
+        name: "",
+        cuisine: "",
+        description: "",
+        address: "",
+        schedule: "",
+        type: "foodtruck",
+      });
+      setImageUrl("/placeholder.svg");
+      setImageFile(null);
+    } catch (error) {
+      console.error("Error adding truck:", error);
+      toast.error("Failed to add establishment. Please try again.");
+    }
   };
 
   const handleChange = (

@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { 
   MapPin, Clock, DollarSign, Users, Truck as TruckIcon, 
-  PlusCircle, Edit, Trash2, UtensilsCrossed, Calendar as CalendarIcon 
+  PlusCircle, Edit, Trash2, UtensilsCrossed, Calendar as CalendarIcon,
+  ImagePlus
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -27,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -38,8 +40,13 @@ import {
   addScheduleEntry,
   updateScheduleEntry,
   deleteScheduleEntry,
+  updateTruckMainImage,
+  fileToDataUrl,
+  getTruckDetails,
+  updateTruckDetails,
   MenuItem,
-  ScheduleEntry
+  ScheduleEntry,
+  TruckDetails
 } from "@/utils/vendorManagement";
 
 interface Truck {
@@ -68,6 +75,11 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
     displayedTrucks.length > 0 ? displayedTrucks[0] : null
   );
   
+  // Truck details state
+  const [truckDetails, setTruckDetails] = useState<TruckDetails | null>(null);
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
+  
   // Menu state
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [newMenuItem, setNewMenuItem] = useState<Partial<MenuItem>>({
@@ -77,7 +89,11 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
     category: 'Main',
     available: true
   });
+  const [menuItemImageFile, setMenuItemImageFile] = useState<File | null>(null);
+  const [menuItemImagePreview, setMenuItemImagePreview] = useState<string | null>(null);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [editingMenuItemImageFile, setEditingMenuItemImageFile] = useState<File | null>(null);
+  const [editingMenuItemImagePreview, setEditingMenuItemImagePreview] = useState<string | null>(null);
   
   // Schedule state
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
@@ -93,60 +109,139 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
   const [editingScheduleEntry, setEditingScheduleEntry] = useState<ScheduleEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-  // Load menu items and schedule when selected truck changes
+  // Load truck details, menu items and schedule when selected truck changes
   useEffect(() => {
     if (selectedTruck) {
+      const details = getTruckDetails(selectedTruck.id);
+      setTruckDetails(details);
       setMenuItems(getMenuItems(selectedTruck.id));
       setScheduleEntries(getScheduleEntries(selectedTruck.id));
     }
   }, [selectedTruck]);
 
+  // Handler for uploading main truck image
+  const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && selectedTruck) {
+      setMainImageFile(file);
+      const imageObjectUrl = URL.createObjectURL(file);
+      setMainImagePreview(imageObjectUrl);
+    }
+  };
+
+  // Handler for saving main truck image
+  const handleSaveMainImage = async () => {
+    if (!selectedTruck || !mainImageFile) return;
+    
+    try {
+      const dataUrl = await fileToDataUrl(mainImageFile);
+      const updatedDetails = updateTruckMainImage(selectedTruck.id, dataUrl);
+      
+      if (updatedDetails) {
+        setTruckDetails(updatedDetails);
+        // Update the truck in the displayed trucks list
+        const updatedTruck = { ...selectedTruck, image: dataUrl };
+        setSelectedTruck(updatedTruck);
+      }
+      
+      // Reset state
+      setMainImageFile(null);
+      setMainImagePreview(null);
+    } catch (error) {
+      console.error("Error saving image:", error);
+    }
+  };
+
+  // Handler for menu item image change
+  const handleMenuItemImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setMenuItemImageFile(file);
+      const imageObjectUrl = URL.createObjectURL(file);
+      setMenuItemImagePreview(imageObjectUrl);
+    }
+  };
+
+  // Handler for editing menu item image change
+  const handleEditingMenuItemImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editingMenuItem) {
+      setEditingMenuItemImageFile(file);
+      const imageObjectUrl = URL.createObjectURL(file);
+      setEditingMenuItemImagePreview(imageObjectUrl);
+    }
+  };
+
   // Handler for adding new menu item
-  const handleAddMenuItem = () => {
+  const handleAddMenuItem = async () => {
     if (!selectedTruck || !newMenuItem.name || !newMenuItem.price) return;
     
-    const item = addMenuItem(selectedTruck.id, {
-      name: newMenuItem.name,
-      description: newMenuItem.description || '',
-      price: Number(newMenuItem.price),
-      category: newMenuItem.category || 'Main',
-      available: newMenuItem.available !== false,
-      image: newMenuItem.image
-    });
-    
-    setMenuItems([...menuItems, item]);
-    
-    // Reset form
-    setNewMenuItem({
-      name: '',
-      description: '',
-      price: 0,
-      category: 'Main',
-      available: true
-    });
+    try {
+      // Process image if one was selected
+      let imageUrl = undefined;
+      if (menuItemImageFile) {
+        imageUrl = await fileToDataUrl(menuItemImageFile);
+      }
+      
+      const item = addMenuItem(selectedTruck.id, {
+        name: newMenuItem.name,
+        description: newMenuItem.description || '',
+        price: Number(newMenuItem.price),
+        category: newMenuItem.category || 'Main',
+        available: newMenuItem.available !== false,
+        image: imageUrl
+      });
+      
+      setMenuItems([...menuItems, item]);
+      
+      // Reset form
+      setNewMenuItem({
+        name: '',
+        description: '',
+        price: 0,
+        category: 'Main',
+        available: true
+      });
+      setMenuItemImageFile(null);
+      setMenuItemImagePreview(null);
+    } catch (error) {
+      console.error("Error adding menu item:", error);
+    }
   };
 
   // Handler for updating menu item
-  const handleUpdateMenuItem = () => {
+  const handleUpdateMenuItem = async () => {
     if (!selectedTruck || !editingMenuItem) return;
     
-    const updatedItem = updateMenuItem(selectedTruck.id, editingMenuItem.id, {
-      name: editingMenuItem.name,
-      description: editingMenuItem.description,
-      price: editingMenuItem.price,
-      category: editingMenuItem.category,
-      available: editingMenuItem.available,
-      image: editingMenuItem.image
-    });
-    
-    if (updatedItem) {
-      setMenuItems(menuItems.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-      ));
+    try {
+      // Process image if one was selected
+      let imageUrl = editingMenuItem.image;
+      if (editingMenuItemImageFile) {
+        imageUrl = await fileToDataUrl(editingMenuItemImageFile);
+      }
+      
+      const updatedItem = updateMenuItem(selectedTruck.id, editingMenuItem.id, {
+        name: editingMenuItem.name,
+        description: editingMenuItem.description,
+        price: editingMenuItem.price,
+        category: editingMenuItem.category,
+        available: editingMenuItem.available,
+        image: imageUrl
+      });
+      
+      if (updatedItem) {
+        setMenuItems(menuItems.map(item => 
+          item.id === updatedItem.id ? updatedItem : item
+        ));
+      }
+      
+      // Reset editing state
+      setEditingMenuItem(null);
+      setEditingMenuItemImageFile(null);
+      setEditingMenuItemImagePreview(null);
+    } catch (error) {
+      console.error("Error updating menu item:", error);
     }
-    
-    // Reset editing state
-    setEditingMenuItem(null);
   };
 
   // Handler for deleting menu item
@@ -337,15 +432,68 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
 
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4">
-                  <CardHeader>
+                  <CardHeader className="flex flex-row justify-between items-center">
                     <CardTitle>Your Food Trucks</CardTitle>
+                    {selectedTruck && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <ImagePlus className="h-4 w-4 mr-2" />
+                            Update Main Image
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Update Main Image</DialogTitle>
+                            <DialogDescription>
+                              This image will be displayed on your location listing.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="flex flex-col items-center">
+                              <img 
+                                src={mainImagePreview || (truckDetails?.mainImage || selectedTruck.image)} 
+                                alt="Preview" 
+                                className="w-full h-48 object-cover rounded-md mb-4"
+                              />
+                              <div className="w-full">
+                                <Label htmlFor="main-image" className="cursor-pointer w-full">
+                                  <div className="flex items-center justify-center space-x-2 bg-muted p-3 rounded-md border border-dashed hover:bg-muted/80 transition-colors">
+                                    <ImagePlus className="h-5 w-5" />
+                                    <span>Choose Image</span>
+                                  </div>
+                                  <Input 
+                                    id="main-image" 
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleMainImageChange}
+                                  />
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button onClick={handleSaveMainImage} disabled={!mainImageFile}>
+                              Save Image
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {displayedTrucks.map((truck) => (
                         <div key={truck.id} className="flex items-center space-x-4">
                           <div className="h-12 w-12 rounded-md overflow-hidden">
-                            <img src={truck.image} alt={truck.name} className="h-full w-full object-cover" />
+                            <img 
+                              src={truck.id === selectedTruck?.id && truckDetails?.mainImage 
+                                ? truckDetails.mainImage 
+                                : truck.image} 
+                              alt={truck.name} 
+                              className="h-full w-full object-cover" 
+                            />
                           </div>
                           <div className="flex-1">
                             <h3 className="font-medium">{truck.name}</h3>
@@ -701,6 +849,29 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
                         <DialogTitle>Add Menu Item</DialogTitle>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
+                        <div className="flex flex-col items-center mb-4">
+                          <img 
+                            src={menuItemImagePreview || "/placeholder.svg"} 
+                            alt="Preview" 
+                            className="w-full h-40 object-cover rounded-md mb-2"
+                          />
+                          <div className="w-full">
+                            <Label htmlFor="item-image" className="cursor-pointer w-full">
+                              <div className="flex items-center justify-center space-x-2 bg-muted p-3 rounded-md border border-dashed hover:bg-muted/80 transition-colors">
+                                <ImagePlus className="h-5 w-5" />
+                                <span>Upload Image</span>
+                              </div>
+                              <Input 
+                                id="item-image" 
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleMenuItemImageChange}
+                              />
+                            </Label>
+                          </div>
+                        </div>
+                        
                         <div className="grid grid-cols-4 gap-4">
                           <div className="col-span-4">
                             <Label htmlFor="item-name">Item Name</Label>
@@ -805,124 +976,163 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
                             <div className="divide-y">
                               {items.map((item) => (
                                 <div key={item.id} className="p-4">
-                                  <div className="flex justify-between items-start mb-1">
+                                  <div className="flex items-start gap-3">
+                                    {item.image && (
+                                      <div className="h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                                        <img 
+                                          src={item.image} 
+                                          alt={item.name} 
+                                          className="h-full w-full object-cover" 
+                                        />
+                                      </div>
+                                    )}
                                     <div className="flex-1">
-                                      <h4 className="font-medium flex items-center">
-                                        {item.name}
-                                        {!item.available && (
-                                          <Badge variant="outline" className="ml-2 text-xs">Unavailable</Badge>
-                                        )}
-                                      </h4>
-                                      {item.description && (
-                                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                                      )}
-                                    </div>
-                                    <div className="font-medium text-right">
-                                      {formatPrice(item.price)}
-                                    </div>
-                                  </div>
-                                  <div className="flex justify-end mt-2">
-                                    <Dialog>
-                                      <DialogTrigger asChild>
+                                      <div className="flex justify-between items-start mb-1">
+                                        <div>
+                                          <h4 className="font-medium flex items-center">
+                                            {item.name}
+                                            {!item.available && (
+                                              <Badge variant="outline" className="ml-2 text-xs">Unavailable</Badge>
+                                            )}
+                                          </h4>
+                                          {item.description && (
+                                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                                          )}
+                                        </div>
+                                        <div className="font-medium text-right">
+                                          {formatPrice(item.price)}
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end mt-2">
+                                        <Dialog>
+                                          <DialogTrigger asChild>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm"
+                                              onClick={() => {
+                                                setEditingMenuItem(item);
+                                                setEditingMenuItemImagePreview(item.image || null);
+                                              }}
+                                            >
+                                              <Edit className="h-3 w-3" />
+                                            </Button>
+                                          </DialogTrigger>
+                                          <DialogContent>
+                                            <DialogHeader>
+                                              <DialogTitle>Edit Menu Item</DialogTitle>
+                                            </DialogHeader>
+                                            {editingMenuItem && (
+                                              <div className="grid gap-4 py-4">
+                                                <div className="flex flex-col items-center mb-4">
+                                                  <img 
+                                                    src={editingMenuItemImagePreview || editingMenuItem.image || "/placeholder.svg"} 
+                                                    alt="Preview" 
+                                                    className="w-full h-40 object-cover rounded-md mb-2"
+                                                  />
+                                                  <div className="w-full">
+                                                    <Label htmlFor="edit-item-image" className="cursor-pointer w-full">
+                                                      <div className="flex items-center justify-center space-x-2 bg-muted p-3 rounded-md border border-dashed hover:bg-muted/80 transition-colors">
+                                                        <ImagePlus className="h-5 w-5" />
+                                                        <span>{editingMenuItem.image ? 'Change Image' : 'Upload Image'}</span>
+                                                      </div>
+                                                      <Input 
+                                                        id="edit-item-image" 
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleEditingMenuItemImageChange}
+                                                      />
+                                                    </Label>
+                                                  </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-4 gap-4">
+                                                  <div className="col-span-4">
+                                                    <Label htmlFor="edit-item-name">Item Name</Label>
+                                                    <Input
+                                                      id="edit-item-name"
+                                                      value={editingMenuItem.name}
+                                                      onChange={(e) => setEditingMenuItem({
+                                                        ...editingMenuItem,
+                                                        name: e.target.value
+                                                      })}
+                                                    />
+                                                  </div>
+                                                  <div className="col-span-4">
+                                                    <Label htmlFor="edit-item-description">Description</Label>
+                                                    <Textarea
+                                                      id="edit-item-description"
+                                                      value={editingMenuItem.description}
+                                                      onChange={(e) => setEditingMenuItem({
+                                                        ...editingMenuItem,
+                                                        description: e.target.value
+                                                      })}
+                                                    />
+                                                  </div>
+                                                  <div className="col-span-2">
+                                                    <Label htmlFor="edit-item-price">Price ($)</Label>
+                                                    <Input
+                                                      id="edit-item-price"
+                                                      type="number"
+                                                      step="0.01"
+                                                      min="0"
+                                                      value={editingMenuItem.price}
+                                                      onChange={(e) => setEditingMenuItem({
+                                                        ...editingMenuItem,
+                                                        price: parseFloat(e.target.value)
+                                                      })}
+                                                    />
+                                                  </div>
+                                                  <div className="col-span-2">
+                                                    <Label htmlFor="edit-item-category">Category</Label>
+                                                    <Select
+                                                      value={editingMenuItem.category}
+                                                      onValueChange={(value) => setEditingMenuItem({
+                                                        ...editingMenuItem,
+                                                        category: value
+                                                      })}
+                                                    >
+                                                      <SelectTrigger id="edit-item-category">
+                                                        <SelectValue placeholder="Select category" />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        <SelectItem value="Appetizer">Appetizer</SelectItem>
+                                                        <SelectItem value="Main">Main</SelectItem>
+                                                        <SelectItem value="Side">Side</SelectItem>
+                                                        <SelectItem value="Dessert">Dessert</SelectItem>
+                                                        <SelectItem value="Drink">Drink</SelectItem>
+                                                        <SelectItem value="Special">Special</SelectItem>
+                                                      </SelectContent>
+                                                    </Select>
+                                                  </div>
+                                                  <div className="col-span-4 flex items-center space-x-2">
+                                                    <Switch
+                                                      id="edit-item-available"
+                                                      checked={editingMenuItem.available}
+                                                      onCheckedChange={(checked) => setEditingMenuItem({
+                                                        ...editingMenuItem,
+                                                        available: checked
+                                                      })}
+                                                    />
+                                                    <Label htmlFor="edit-item-available">Available for order</Label>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
+                                            <DialogFooter>
+                                              <Button type="submit" onClick={handleUpdateMenuItem}>Update Item</Button>
+                                            </DialogFooter>
+                                          </DialogContent>
+                                        </Dialog>
                                         <Button 
                                           variant="ghost" 
                                           size="sm"
-                                          onClick={() => setEditingMenuItem(item)}
+                                          onClick={() => handleDeleteMenuItem(item.id)}
                                         >
-                                          <Edit className="h-3 w-3" />
+                                          <Trash2 className="h-3 w-3 text-destructive" />
                                         </Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>Edit Menu Item</DialogTitle>
-                                        </DialogHeader>
-                                        {editingMenuItem && (
-                                          <div className="grid gap-4 py-4">
-                                            <div className="grid grid-cols-4 gap-4">
-                                              <div className="col-span-4">
-                                                <Label htmlFor="edit-item-name">Item Name</Label>
-                                                <Input
-                                                  id="edit-item-name"
-                                                  value={editingMenuItem.name}
-                                                  onChange={(e) => setEditingMenuItem({
-                                                    ...editingMenuItem,
-                                                    name: e.target.value
-                                                  })}
-                                                />
-                                              </div>
-                                              <div className="col-span-4">
-                                                <Label htmlFor="edit-item-description">Description</Label>
-                                                <Textarea
-                                                  id="edit-item-description"
-                                                  value={editingMenuItem.description}
-                                                  onChange={(e) => setEditingMenuItem({
-                                                    ...editingMenuItem,
-                                                    description: e.target.value
-                                                  })}
-                                                />
-                                              </div>
-                                              <div className="col-span-2">
-                                                <Label htmlFor="edit-item-price">Price ($)</Label>
-                                                <Input
-                                                  id="edit-item-price"
-                                                  type="number"
-                                                  step="0.01"
-                                                  min="0"
-                                                  value={editingMenuItem.price}
-                                                  onChange={(e) => setEditingMenuItem({
-                                                    ...editingMenuItem,
-                                                    price: parseFloat(e.target.value)
-                                                  })}
-                                                />
-                                              </div>
-                                              <div className="col-span-2">
-                                                <Label htmlFor="edit-item-category">Category</Label>
-                                                <Select
-                                                  value={editingMenuItem.category}
-                                                  onValueChange={(value) => setEditingMenuItem({
-                                                    ...editingMenuItem,
-                                                    category: value
-                                                  })}
-                                                >
-                                                  <SelectTrigger id="edit-item-category">
-                                                    <SelectValue placeholder="Select category" />
-                                                  </SelectTrigger>
-                                                  <SelectContent>
-                                                    <SelectItem value="Appetizer">Appetizer</SelectItem>
-                                                    <SelectItem value="Main">Main</SelectItem>
-                                                    <SelectItem value="Side">Side</SelectItem>
-                                                    <SelectItem value="Dessert">Dessert</SelectItem>
-                                                    <SelectItem value="Drink">Drink</SelectItem>
-                                                    <SelectItem value="Special">Special</SelectItem>
-                                                  </SelectContent>
-                                                </Select>
-                                              </div>
-                                              <div className="col-span-4 flex items-center space-x-2">
-                                                <Switch
-                                                  id="edit-item-available"
-                                                  checked={editingMenuItem.available}
-                                                  onCheckedChange={(checked) => setEditingMenuItem({
-                                                    ...editingMenuItem,
-                                                    available: checked
-                                                  })}
-                                                />
-                                                <Label htmlFor="edit-item-available">Available for order</Label>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )}
-                                        <DialogFooter>
-                                          <Button type="submit" onClick={handleUpdateMenuItem}>Update Item</Button>
-                                        </DialogFooter>
-                                      </DialogContent>
-                                    </Dialog>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      onClick={() => handleDeleteMenuItem(item.id)}
-                                    >
-                                      <Trash2 className="h-3 w-3 text-destructive" />
-                                    </Button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               ))}

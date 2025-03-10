@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/use-toast";
 
 export interface VendorLocationAssignment {
@@ -36,7 +35,18 @@ export interface ScheduleEntry {
   updatedAt: Date;
 }
 
-// Store vendor assignments in localStorage (in a real app, this would be in a database)
+export interface TruckDetails {
+  id: string;
+  name: string;
+  type: "foodtruck" | "restaurant";
+  cuisine: string;
+  description: string;
+  address?: string;
+  schedule?: string;
+  mainImage: string;
+  updatedAt: Date;
+}
+
 export const getVendorAssignments = (): VendorLocationAssignment[] => {
   const assignments = localStorage.getItem('vendorAssignments');
   return assignments ? JSON.parse(assignments) : [];
@@ -54,7 +64,6 @@ export const assignVendorToLocation = (
 ): void => {
   const assignments = getVendorAssignments();
   
-  // Check if assignment already exists
   const existingAssignment = assignments.find(
     a => a.userId === userId && a.truckId === truckId
   );
@@ -68,7 +77,6 @@ export const assignVendorToLocation = (
     return;
   }
   
-  // Add new assignment
   assignments.push({
     userId,
     truckId,
@@ -124,7 +132,6 @@ export const getUsersByLocation = (truckId: string): string[] => {
     .map(a => a.userId);
 };
 
-// Menu management
 export const getMenuItems = (truckId: string): MenuItem[] => {
   const menuItems = localStorage.getItem(`menuItems-${truckId}`);
   return menuItems ? JSON.parse(menuItems) : [];
@@ -215,7 +222,6 @@ export const deleteMenuItem = (truckId: string, itemId: string): void => {
   });
 };
 
-// Schedule management
 export const getScheduleEntries = (truckId: string): ScheduleEntry[] => {
   const scheduleEntries = localStorage.getItem(`schedule-${truckId}`);
   return scheduleEntries ? JSON.parse(scheduleEntries) : [];
@@ -303,5 +309,79 @@ export const deleteScheduleEntry = (truckId: string, entryId: string): void => {
   toast({
     title: "Schedule entry deleted",
     description: `Schedule for ${entry.date} has been removed.`
+  });
+};
+
+export const getTruckDetails = (truckId: string): TruckDetails | null => {
+  const detailsStr = localStorage.getItem(`truckDetails-${truckId}`);
+  return detailsStr ? JSON.parse(detailsStr) : null;
+};
+
+export const saveTruckDetails = (details: TruckDetails): void => {
+  localStorage.setItem(`truckDetails-${details.id}`, JSON.stringify(details));
+};
+
+export const updateTruckMainImage = (truckId: string, imageUrl: string): TruckDetails | null => {
+  const details = getTruckDetails(truckId);
+  
+  if (!details) {
+    toast({
+      title: "Error updating image",
+      description: "Could not find the location details.",
+      variant: "destructive"
+    });
+    return null;
+  }
+  
+  const updatedDetails: TruckDetails = {
+    ...details,
+    mainImage: imageUrl,
+    updatedAt: new Date()
+  };
+  
+  saveTruckDetails(updatedDetails);
+  
+  toast({
+    title: "Image updated",
+    description: "The main image has been updated successfully."
+  });
+  
+  return updatedDetails;
+};
+
+export const updateTruckDetails = (
+  truckId: string,
+  updates: Partial<Omit<TruckDetails, 'id' | 'updatedAt'>>
+): TruckDetails => {
+  const existingDetails = getTruckDetails(truckId);
+  
+  const updatedDetails: TruckDetails = {
+    id: truckId,
+    name: updates.name || (existingDetails?.name || ""),
+    type: updates.type || (existingDetails?.type || "foodtruck"),
+    cuisine: updates.cuisine || (existingDetails?.cuisine || ""),
+    description: updates.description || (existingDetails?.description || ""),
+    address: updates.address || existingDetails?.address,
+    schedule: updates.schedule || existingDetails?.schedule,
+    mainImage: updates.mainImage || (existingDetails?.mainImage || "/placeholder.svg"),
+    updatedAt: new Date()
+  };
+  
+  saveTruckDetails(updatedDetails);
+  
+  toast({
+    title: "Details updated",
+    description: `${updatedDetails.name} details have been updated.`
+  });
+  
+  return updatedDetails;
+};
+
+export const fileToDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 };
