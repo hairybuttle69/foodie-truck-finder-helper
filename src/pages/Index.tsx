@@ -21,20 +21,17 @@ const Index = () => {
   const [isDeveloperMode, setIsDeveloperMode] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   
-  // State to store truck locations by truck name and date
   const [truckLocations, setTruckLocations] = useState<Record<string, Record<string, Location>>>({});
   
   const { user, isLoading } = useAuth();
   
-  // Check if the user needs to authenticate when first loading the app
   useEffect(() => {
     if (!isLoading && !user) {
       setShowAuthPrompt(true);
     }
   }, [isLoading, user]);
 
-  // Sample truck data with locations - in a real app this would come from an API
-  const truckData = [
+  const locations = [
     {
       id: "1",
       name: "Taco Time",
@@ -42,7 +39,8 @@ const Index = () => {
       distance: "0.2 miles",
       image: "/placeholder.svg",
       status: "open" as const,
-      location: [-74.006, 40.7128] as [number, number] // NYC - explicit tuple type
+      location: [-74.006, 40.7128] as [number, number], // NYC 
+      type: "foodtruck" as const
     },
     {
       id: "2",
@@ -51,7 +49,8 @@ const Index = () => {
       distance: "0.5 miles",
       image: "/placeholder.svg",
       status: "open" as const,
-      location: [-118.2437, 34.0522] as [number, number] // LA - explicit tuple type
+      location: [-118.2437, 34.0522] as [number, number], // LA
+      type: "foodtruck" as const
     },
     {
       id: "3",
@@ -60,27 +59,46 @@ const Index = () => {
       distance: "0.8 miles",
       image: "/placeholder.svg",
       status: "closed" as const,
-      location: [-87.6298, 41.8781] as [number, number] // Chicago - explicit tuple type
+      location: [-87.6298, 41.8781] as [number, number], // Chicago
+      type: "foodtruck" as const
+    },
+    {
+      id: "4",
+      name: "Pizza Corner",
+      cuisine: "Italian",
+      distance: "1.2 miles",
+      image: "/placeholder.svg",
+      status: "open" as const,
+      location: [-122.4194, 37.7749] as [number, number], // San Francisco
+      type: "restaurant" as const
+    },
+    {
+      id: "5",
+      name: "Noodle House",
+      cuisine: "Asian",
+      distance: "1.5 miles",
+      image: "/placeholder.svg",
+      status: "open" as const,
+      location: [-80.1918, 25.7617] as [number, number], // Miami
+      type: "restaurant" as const
     }
   ];
 
-  // Handle location updates from truck cards
-  const handleLocationUpdate = (truckName: string, date: string, location: Location) => {
+  const handleLocationUpdate = (locationName: string, date: string, location: Location) => {
     setTruckLocations(prev => ({
       ...prev,
-      [truckName]: {
-        ...(prev[truckName] || {}),
+      [locationName]: {
+        ...(prev[locationName] || {}),
         [date]: location
       }
     }));
   };
 
-  // Filter trucks based on vendor assignments if in vendor mode
-  const getVendorTrucks = () => {
-    if (!user || !isVendorMode) return truckData;
+  const getVendorLocations = () => {
+    if (!user || !isVendorMode) return locations;
     
-    const assignedTruckIds = getLocationsByVendor(user.id);
-    return truckData.filter(truck => assignedTruckIds.includes(truck.id));
+    const assignedLocationIds = getLocationsByVendor(user.id);
+    return locations.filter(location => assignedLocationIds.includes(location.id));
   };
 
   if (isLoading) {
@@ -91,7 +109,6 @@ const Index = () => {
     );
   }
 
-  // If user is not logged in, show auth prompt
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -123,11 +140,11 @@ const Index = () => {
       />
       <main className="pt-16">
         {isVendorMode ? (
-          <VendorDashboard vendorTrucks={getVendorTrucks()} />
+          <VendorDashboard vendorLocations={getVendorLocations()} />
         ) : (
           <>
             {showMap ? (
-              <Map trucks={truckData} truckLocations={truckLocations} />
+              <Map trucks={locations} truckLocations={truckLocations} />
             ) : (
               <div className="pb-8 pt-4">
                 <TruckList 
@@ -136,10 +153,9 @@ const Index = () => {
                 />
               </div>
             )}
-            {/* Show AddTruckForm and VendorAssignmentManager in developer mode */}
             {isDeveloperMode && (
               <div className="container mx-auto px-4">
-                <VendorAssignmentManager trucks={truckData} />
+                <VendorAssignmentManager locations={locations} />
                 <AddTruckForm />
               </div>
             )}

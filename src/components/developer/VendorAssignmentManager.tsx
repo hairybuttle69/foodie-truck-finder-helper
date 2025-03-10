@@ -17,17 +17,18 @@ import {
   getVendorAssignments,
   VendorLocationAssignment 
 } from "@/utils/vendorManagement";
-import { UserCheck, UserX, Search, Truck } from "lucide-react";
+import { UserCheck, UserX, Search, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface TruckInfo {
+interface LocationInfo {
   id: string;
   name: string;
+  type: "foodtruck" | "restaurant";
 }
 
-export const VendorAssignmentManager = ({ trucks }: { trucks: TruckInfo[] }) => {
+export const VendorAssignmentManager = ({ locations }: { locations: LocationInfo[] }) => {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedTruckId, setSelectedTruckId] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
   const [assignments, setAssignments] = useState<VendorLocationAssignment[]>([]);
   const [users, setUsers] = useState<{ id: string; email: string }[]>([]);
@@ -49,23 +50,24 @@ export const VendorAssignmentManager = ({ trucks }: { trucks: TruckInfo[] }) => 
   }, [user]);
 
   const handleAssign = () => {
-    if (!selectedUserId || !selectedTruckId) return;
+    if (!selectedUserId || !selectedLocationId) return;
     
-    const truck = trucks.find(t => t.id === selectedTruckId);
-    if (!truck) return;
+    const location = locations.find(l => l.id === selectedLocationId);
+    if (!location) return;
     
     assignVendorToLocation(
       selectedUserId, 
-      selectedTruckId, 
-      truck.name,
+      selectedLocationId, 
+      location.name,
+      location.type,
       user?.email || "unknown"
     );
     
     setAssignments(getVendorAssignments());
   };
 
-  const handleRemove = (userId: string, truckId: string) => {
-    removeVendorFromLocation(userId, truckId);
+  const handleRemove = (userId: string, locationId: string) => {
+    removeVendorFromLocation(userId, locationId);
     setAssignments(getVendorAssignments());
   };
 
@@ -74,9 +76,13 @@ export const VendorAssignmentManager = ({ trucks }: { trucks: TruckInfo[] }) => 
     return foundUser ? foundUser.email : userId;
   };
 
-  const findTruckName = (truckId: string) => {
-    const truck = trucks.find(t => t.id === truckId);
-    return truck ? truck.name : truckId;
+  const findLocationName = (locationId: string) => {
+    const location = locations.find(l => l.id === locationId);
+    return location ? location.name : locationId;
+  };
+
+  const getLocationType = (assignment: VendorLocationAssignment) => {
+    return assignment.locationType === "foodtruck" ? "Food Truck" : "Restaurant";
   };
 
   const searchUsers = () => {
@@ -125,14 +131,16 @@ export const VendorAssignmentManager = ({ trucks }: { trucks: TruckInfo[] }) => 
       </div>
       
       <div className="mb-6">
-        <Label htmlFor="truck-select">Select Food Truck/Location</Label>
-        <Select value={selectedTruckId} onValueChange={setSelectedTruckId}>
-          <SelectTrigger id="truck-select">
+        <Label htmlFor="location-select">Select Location</Label>
+        <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+          <SelectTrigger id="location-select">
             <SelectValue placeholder="Select a location" />
           </SelectTrigger>
           <SelectContent>
-            {trucks.map(truck => (
-              <SelectItem key={truck.id} value={truck.id}>{truck.name}</SelectItem>
+            {locations.map(location => (
+              <SelectItem key={location.id} value={location.id}>
+                {location.name} ({location.type === "foodtruck" ? "Food Truck" : "Restaurant"})
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -140,7 +148,7 @@ export const VendorAssignmentManager = ({ trucks }: { trucks: TruckInfo[] }) => 
       
       <Button 
         onClick={handleAssign} 
-        disabled={!selectedUserId || !selectedTruckId}
+        disabled={!selectedUserId || !selectedLocationId}
         className="w-full mb-6"
       >
         <UserCheck className="mr-2 h-4 w-4" />
@@ -157,14 +165,17 @@ export const VendorAssignmentManager = ({ trucks }: { trucks: TruckInfo[] }) => 
               <div className="flex flex-col">
                 <span className="font-medium">{findUserEmail(assignment.userId)}</span>
                 <span className="text-sm text-muted-foreground flex items-center">
-                  <Truck className="h-3 w-3 mr-1" />
-                  {assignment.truckName}
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {assignment.locationName}
+                  <span className="ml-1 text-xs opacity-70">
+                    ({getLocationType(assignment)})
+                  </span>
                 </span>
               </div>
               <Button 
                 variant="destructive" 
                 size="sm"
-                onClick={() => handleRemove(assignment.userId, assignment.truckId)}
+                onClick={() => handleRemove(assignment.userId, assignment.locationId)}
               >
                 <UserX className="h-4 w-4" />
               </Button>

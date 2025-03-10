@@ -3,11 +3,11 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
-import { MapPin, Clock, DollarSign, Users, Truck as TruckIcon } from "lucide-react";
+import { MapPin, Clock, DollarSign, Users, Truck as TruckIcon, Store } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface Truck {
+interface Location {
   id: string;
   name: string;
   cuisine: string;
@@ -15,36 +15,37 @@ interface Truck {
   status: "open" | "closed";
   location?: [number, number];
   distance?: string;
+  type: "foodtruck" | "restaurant";
 }
 
 interface VendorDashboardProps {
-  vendorTrucks?: Truck[];
+  vendorLocations?: Location[];
 }
 
-export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => {
+export const VendorDashboard = ({ vendorLocations = [] }: VendorDashboardProps) => {
   const { user } = useAuth();
   const [date, setDate] = React.useState<Date>(new Date());
   
-  // Use the provided trucks or fallback to empty array
-  const displayedTrucks = vendorTrucks;
+  // Use the provided locations or fallback to empty array
+  const displayedLocations = vendorLocations;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Vendor Dashboard</h1>
         <p className="text-muted-foreground">
-          Manage your food trucks and locations
+          Manage your food trucks and restaurant locations
         </p>
       </div>
       
-      {displayedTrucks.length === 0 ? (
+      {displayedLocations.length === 0 ? (
         <Card className="mb-8">
           <CardContent className="pt-6">
             <div className="text-center py-8">
               <TruckIcon className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-4" />
               <h3 className="text-xl font-medium mb-2">No Assigned Locations</h3>
               <p className="text-muted-foreground mb-4">
-                You don't have any food trucks or locations assigned to your account yet.
+                You don't have any food trucks or restaurants assigned to your account yet.
               </p>
               <p className="text-sm text-muted-foreground">
                 Please contact an administrator to have locations assigned to your account.
@@ -110,21 +111,26 @@ export const VendorDashboard = ({ vendorTrucks = [] }: VendorDashboardProps) => 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
               <Card className="col-span-4">
                 <CardHeader>
-                  <CardTitle>Your Food Trucks</CardTitle>
+                  <CardTitle>Your Locations</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {displayedTrucks.map((truck) => (
-                      <div key={truck.id} className="flex items-center space-x-4">
+                    {displayedLocations.map((location) => (
+                      <div key={location.id} className="flex items-center space-x-4">
                         <div className="h-12 w-12 rounded-md overflow-hidden">
-                          <img src={truck.image} alt={truck.name} className="h-full w-full object-cover" />
+                          <img src={location.image} alt={location.name} className="h-full w-full object-cover" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium">{truck.name}</h3>
-                          <p className="text-sm text-muted-foreground">{truck.cuisine}</p>
+                          <div className="flex items-center">
+                            <h3 className="font-medium">{location.name}</h3>
+                            <span className="ml-2 text-xs bg-gray-100 rounded px-2 py-0.5">
+                              {location.type === "foodtruck" ? "Food Truck" : "Restaurant"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{location.cuisine}</p>
                         </div>
-                        <Badge variant={truck.status === "open" ? "default" : "secondary"}>
-                          {truck.status}
+                        <Badge variant={location.status === "open" ? "default" : "secondary"}>
+                          {location.status}
                         </Badge>
                       </div>
                     ))}

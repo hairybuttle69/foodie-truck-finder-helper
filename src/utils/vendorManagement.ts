@@ -3,8 +3,9 @@ import { toast } from "@/components/ui/use-toast";
 
 export interface VendorLocationAssignment {
   userId: string;
-  truckId: string;
-  truckName: string;
+  locationId: string;
+  locationName: string;
+  locationType: "foodtruck" | "restaurant";
   assignedBy: string;
   assignedAt: Date;
 }
@@ -21,21 +22,22 @@ export const saveVendorAssignments = (assignments: VendorLocationAssignment[]): 
 
 export const assignVendorToLocation = (
   userId: string, 
-  truckId: string,
-  truckName: string,
+  locationId: string,
+  locationName: string,
+  locationType: "foodtruck" | "restaurant",
   assignedBy: string
 ): void => {
   const assignments = getVendorAssignments();
   
   // Check if assignment already exists
   const existingAssignment = assignments.find(
-    a => a.userId === userId && a.truckId === truckId
+    a => a.userId === userId && a.locationId === locationId
   );
   
   if (existingAssignment) {
     toast({
       title: "Assignment already exists",
-      description: `${truckName} is already assigned to this user.`,
+      description: `${locationName} is already assigned to this user.`,
       variant: "destructive"
     });
     return;
@@ -44,8 +46,9 @@ export const assignVendorToLocation = (
   // Add new assignment
   assignments.push({
     userId,
-    truckId,
-    truckName,
+    locationId,
+    locationName,
+    locationType,
     assignedBy,
     assignedAt: new Date()
   });
@@ -54,13 +57,13 @@ export const assignVendorToLocation = (
   
   toast({
     title: "Vendor assigned",
-    description: `${truckName} has been assigned to the selected user.`
+    description: `${locationName} has been assigned to the selected user.`
   });
 };
 
-export const removeVendorFromLocation = (userId: string, truckId: string): void => {
+export const removeVendorFromLocation = (userId: string, locationId: string): void => {
   const assignments = getVendorAssignments();
-  const assignment = assignments.find(a => a.userId === userId && a.truckId === truckId);
+  const assignment = assignments.find(a => a.userId === userId && a.locationId === locationId);
   
   if (!assignment) {
     toast({
@@ -72,14 +75,14 @@ export const removeVendorFromLocation = (userId: string, truckId: string): void 
   }
   
   const filteredAssignments = assignments.filter(
-    a => !(a.userId === userId && a.truckId === truckId)
+    a => !(a.userId === userId && a.locationId === locationId)
   );
   
   saveVendorAssignments(filteredAssignments);
   
   toast({
     title: "Assignment removed",
-    description: `${assignment.truckName} has been unassigned from this user.`
+    description: `${assignment.locationName} has been unassigned from this user.`
   });
 };
 
@@ -87,12 +90,12 @@ export const getLocationsByVendor = (userId: string): string[] => {
   const assignments = getVendorAssignments();
   return assignments
     .filter(a => a.userId === userId)
-    .map(a => a.truckId);
+    .map(a => a.locationId);
 };
 
-export const getUsersByLocation = (truckId: string): string[] => {
+export const getUsersByLocation = (locationId: string): string[] => {
   const assignments = getVendorAssignments();
   return assignments
-    .filter(a => a.truckId === truckId)
+    .filter(a => a.locationId === locationId)
     .map(a => a.userId);
 };
