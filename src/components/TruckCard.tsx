@@ -13,6 +13,8 @@ import { updateTruckMainImage, fileToDataUrl, getMenuItems, MenuItem } from "@/u
 import { MenuItemsEditor } from "./developer/MenuItemsEditor";
 import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
+import { OrderForm } from "./OrderForm";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Location {
   address: string;
@@ -66,6 +68,8 @@ export const TruckCard = ({
   const [newLatitude, setNewLatitude] = useState("40.7128");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
+  const { user } = useAuth();
 
   const handleLoadMenuItems = () => {
     const items = getMenuItems(id);
@@ -162,6 +166,13 @@ export const TruckCard = ({
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleOrderClick = () => {
+    if (menuItems.length === 0) {
+      handleLoadMenuItems();
+    }
+    setIsOrderSheetOpen(true);
   };
 
   const currentDateKey = selectedDate?.toISOString().split('T')[0];
@@ -283,7 +294,32 @@ export const TruckCard = ({
               </ScrollArea>
             </SheetContent>
           </Sheet>
-          <Button className="flex-1">Order Now</Button>
+          
+          <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                className="flex-1" 
+                disabled={status !== "open"} 
+                onClick={handleOrderClick}
+              >
+                Order Now
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="sm:max-w-md w-full">
+              <SheetHeader>
+                <SheetTitle>Order from {name}</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <OrderForm 
+                  truckId={id}
+                  truckName={name}
+                  vendorId={user?.id || 'unknown'}
+                  menuItems={menuItems}
+                  onClose={() => setIsOrderSheetOpen(false)}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
 
         <div className="flex space-x-2">
