@@ -1,4 +1,4 @@
-import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2, ImagePlus, Utensils } from "lucide-react";
+import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2, ImagePlus, Utensils, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useState } from "react";
@@ -9,8 +9,10 @@ import { Calendar as CalendarComponent } from "./ui/calendar";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "./ui/use-toast";
-import { updateTruckMainImage, fileToDataUrl } from "@/utils/vendorManagement";
+import { updateTruckMainImage, fileToDataUrl, getMenuItems, MenuItem } from "@/utils/vendorManagement";
 import { MenuItemsEditor } from "./developer/MenuItemsEditor";
+import { ScrollArea } from "./ui/scroll-area";
+import { Badge } from "./ui/badge";
 
 interface Location {
   address: string;
@@ -63,6 +65,12 @@ export const TruckCard = ({
   const [newLongitude, setNewLongitude] = useState("-74.005");
   const [newLatitude, setNewLatitude] = useState("40.7128");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  const handleLoadMenuItems = () => {
+    const items = getMenuItems(id);
+    setMenuItems(items);
+  };
 
   const handleReviewSubmit = async (review: { rating: number; comment: string; media?: File[] }) => {
     const mediaUrls = await Promise.all((review.media || []).map(async (file) => ({
@@ -159,6 +167,14 @@ export const TruckCard = ({
   const currentDateKey = selectedDate?.toISOString().split('T')[0];
   const currentLocation = currentDateKey ? locations[currentDateKey] : undefined;
 
+  const menuItemsByCategory = menuItems.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, MenuItem[]>);
+
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg animate-fade-in relative">
       {isDeveloperMode && (
@@ -217,7 +233,56 @@ export const TruckCard = ({
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button className="flex-1" variant="outline">View Menu</Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button className="flex-1" variant="outline" onClick={handleLoadMenuItems}>
+                <Menu className="w-4 h-4 mr-1" />
+                View Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-md w-full">
+              <SheetHeader>
+                <SheetTitle>{name} Menu</SheetTitle>
+              </SheetHeader>
+              <ScrollArea className="h-[calc(100vh-120px)] mt-6 pr-4">
+                {Object.keys(menuItemsByCategory).length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    <p>No menu items available at this time.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {Object.entries(menuItemsByCategory).map(([category, items]) => (
+                      <div key={category} className="space-y-4">
+                        <h3 className="text-lg font-medium border-b pb-2">{category}</h3>
+                        <div className="space-y-4">
+                          {items.filter(item => item.available).map(item => (
+                            <div key={item.id} className="flex items-start gap-3">
+                              {item.image && (
+                                <img 
+                                  src={item.image} 
+                                  alt={item.name} 
+                                  className="w-16 h-16 object-cover rounded-md"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <h4 className="font-medium">{item.name}</h4>
+                                  <span className="font-medium">${item.price.toFixed(2)}</span>
+                                </div>
+                                {item.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
           <Button className="flex-1">Order Now</Button>
         </div>
 
