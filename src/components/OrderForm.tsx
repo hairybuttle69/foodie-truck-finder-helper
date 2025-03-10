@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -5,7 +6,7 @@ import { Label } from "./ui/label";
 import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
-import { CheckCircle, CreditCard, Smartphone } from "lucide-react";
+import { CheckCircle, CreditCard, Smartphone, Loader2 } from "lucide-react";
 import { MenuItem } from "@/utils/vendorManagement";
 import { processOrder } from "@/utils/orderManagement";
 import { toast } from "./ui/use-toast";
@@ -38,6 +39,10 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
   });
   const [currentStep, setCurrentStep] = useState<"select-items" | "customer-info" | "payment" | "confirmation">("select-items");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderConfirmation, setOrderConfirmation] = useState({
+    orderNumber: "",
+    orderTime: new Date()
+  });
   
   const availableItems = menuItems.filter(item => item.available);
   
@@ -126,7 +131,7 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
     setIsProcessing(true);
 
     try {
-      await processOrder({
+      const order = await processOrder({
         truckId,
         truckName,
         vendorId,
@@ -139,11 +144,24 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
         total
       });
 
+      // Set order confirmation details
+      setOrderConfirmation({
+        orderNumber: order.id.substring(0, 8).toUpperCase(),
+        orderTime: new Date()
+      });
+
+      toast({
+        title: "Payment successful",
+        description: `Your payment of $${total.toFixed(2)} has been processed successfully.`,
+      });
+
       setCurrentStep("confirmation");
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "There was an error processing your payment";
+      
       toast({
         title: "Payment failed",
-        description: "There was an error processing your payment. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -417,7 +435,14 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
                 onClick={handleSubmitOrder}
                 disabled={isProcessing}
               >
-                {isProcessing ? "Processing..." : `Pay $${total.toFixed(2)}`}
+                {isProcessing ? (
+                  <div className="flex items-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  `Pay $${total.toFixed(2)}`
+                )}
               </Button>
               <Button 
                 variant="outline" 
@@ -427,6 +452,10 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
               >
                 Back
               </Button>
+              
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                <p>Payment is processed securely. 5% of the total amount goes to Spot as a service fee.</p>
+              </div>
             </div>
           </div>
         </>
@@ -447,7 +476,7 @@ export const OrderForm = ({ truckId, truckName, vendorId, menuItems, onClose }: 
             <div className="text-start mt-4 space-y-2">
               <div className="flex justify-between">
                 <span>Order Number:</span>
-                <span className="font-medium">{Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
+                <span className="font-medium">{orderConfirmation.orderNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span>Pickup Time:</span>
