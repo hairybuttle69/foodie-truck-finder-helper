@@ -7,15 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileBadges } from '@/components/badges/ProfileBadges';
-import { Badge } from '@/components/ui/badge';
 import { UserBadges } from '@/components/badges/UserBadges';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Header } from '@/components/Header';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -29,6 +31,10 @@ const Profile = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Please sign in to view your profile</h1>
           <p className="text-muted-foreground mb-4">You need to be logged in to access this page</p>
+          <Button onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2" />
+            Back to Home
+          </Button>
         </div>
       </div>
     );
@@ -67,7 +73,17 @@ const Profile = () => {
         onDeveloperModeToggle={() => setIsDeveloperMode(!isDeveloperMode)}
       />
       <div className="container mx-auto px-4 pt-24 pb-12">
-        <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            className="mr-4" 
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="mr-2" />
+            Back to Home
+          </Button>
+          <h1 className="text-3xl font-bold">Your Profile</h1>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Profile Card */}
