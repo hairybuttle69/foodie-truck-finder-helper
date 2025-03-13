@@ -4,6 +4,8 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Star, ImagePlus, X } from "lucide-react";
 import { Input } from "./ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { trackReview, notifyNewBadges } from "@/utils/badgeService";
 
 interface ReviewFormProps {
   onSubmit: (review: { rating: number; comment: string; media?: File[] }) => void;
@@ -14,11 +16,22 @@ export const ReviewForm = ({ onSubmit }: ReviewFormProps) => {
   const [comment, setComment] = useState("");
   const [hoveredRating, setHoveredRating] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const { user } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (rating === 0) return;
+    
     onSubmit({ rating, comment, media: selectedFiles });
+    
+    // Track the review for badges if user is logged in
+    if (user) {
+      const newBadges = trackReview(user.id);
+      if (newBadges.length > 0) {
+        notifyNewBadges(newBadges);
+      }
+    }
+    
     setRating(0);
     setComment("");
     setSelectedFiles([]);
