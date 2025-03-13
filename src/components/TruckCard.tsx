@@ -1,8 +1,7 @@
-
-import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2, ImagePlus, Utensils, Menu } from "lucide-react";
+import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2, ImagePlus, Utensils, Menu, Heart } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { ReviewForm } from "./ReviewForm";
 import { ReviewCard } from "./ReviewCard";
@@ -71,7 +70,54 @@ export const TruckCard = ({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isOrderSheetOpen, setIsOrderSheetOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      const favorites = JSON.parse(localStorage.getItem(`favorites_${user.id}`) || '[]');
+      setIsFavorite(favorites.some((fav: any) => fav.id === id));
+    }
+  }, [id, user]);
+
+  const handleToggleFavorite = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save favorite spots",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const favorites = JSON.parse(localStorage.getItem(`favorites_${user.id}`) || '[]');
+    let newFavorites;
+    
+    if (isFavorite) {
+      newFavorites = favorites.filter((fav: any) => fav.id !== id);
+      toast({
+        title: "Removed from favorites",
+        description: `${name} has been removed from your favorites`
+      });
+    } else {
+      const truckToAdd = {
+        id,
+        name,
+        cuisine,
+        distance,
+        image,
+        status
+      };
+      newFavorites = [...favorites, truckToAdd];
+      toast({
+        title: "Added to favorites",
+        description: `${name} has been added to your favorites`
+      });
+    }
+    
+    localStorage.setItem(`favorites_${user.id}`, JSON.stringify(newFavorites));
+    setIsFavorite(!isFavorite);
+  };
 
   const handleLoadMenuItems = () => {
     const items = getMenuItems(id);
@@ -232,9 +278,19 @@ export const TruckCard = ({
         </div>
       </div>
       <div className="p-4 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold">{name}</h3>
-          <p className="text-sm text-gray-600">{cuisine}</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg font-semibold">{name}</h3>
+            <p className="text-sm text-gray-600">{cuisine}</p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`hover:bg-transparent ${isFavorite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
+            onClick={handleToggleFavorite}
+          >
+            <Heart className={`h-6 w-6 ${isFavorite ? 'fill-current' : ''}`} />
+          </Button>
         </div>
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <div className="flex items-center">

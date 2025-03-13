@@ -1,5 +1,5 @@
 
-import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon } from "lucide-react";
+import { MapIcon, TruckIcon, MenuIcon, ChefHat, CodeIcon, Heart } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { 
@@ -103,7 +103,12 @@ export const Header = ({
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Favorites</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/favorites" className="cursor-pointer flex w-full items-center">
+                      <Heart className="mr-2 h-4 w-4" />
+                      Favorite Spots
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem>Order History</DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
