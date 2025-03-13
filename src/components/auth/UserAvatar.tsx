@@ -13,6 +13,7 @@ import { User, LogOut, Award } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Badge as BadgeType, BADGES, getUserBadges, markBadgeAsDisplayed } from "@/utils/badgeService";
 import { UserBadges } from "@/components/badges/UserBadges";
+import { Link } from "react-router-dom";
 
 export const UserAvatar = () => {
   const { user, signOut } = useAuth();
@@ -96,9 +97,11 @@ export const UserAvatar = () => {
           <UserBadges userId={user.id} showLabels={true} className="mb-1" />
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <User className="mr-2 h-4 w-4" />
-          Profile
+        <DropdownMenuItem asChild>
+          <Link to="/profile" className="cursor-pointer flex w-full items-center">
+            <User className="mr-2 h-4 w-4" />
+            Profile
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem>Favorites</DropdownMenuItem>
         <DropdownMenuItem>Order History</DropdownMenuItem>

@@ -12,6 +12,7 @@ import {
 import { LoginModal } from "./LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "./auth/UserAvatar";
+import { Link } from "react-router-dom";
 
 interface HeaderProps {
   onMapToggle: () => void;
@@ -56,8 +57,10 @@ export const Header = ({
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <TruckIcon className="w-6 h-6 text-primary" />
-          <span className="text-xl font-semibold">The Spot</span>
+          <Link to="/" className="flex items-center space-x-2">
+            <TruckIcon className="w-6 h-6 text-primary" />
+            <span className="text-xl font-semibold">The Spot</span>
+          </Link>
           {isVendorMode && (
             <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-white">
               <ChefHat className="mr-1 h-3 w-3" />
@@ -95,7 +98,11 @@ export const Header = ({
             <DropdownMenuContent align="end" className="w-56">
               {user && (
                 <>
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer flex w-full items-center">
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem>Favorites</DropdownMenuItem>
                   <DropdownMenuItem>Order History</DropdownMenuItem>
                   <DropdownMenuSeparator />
