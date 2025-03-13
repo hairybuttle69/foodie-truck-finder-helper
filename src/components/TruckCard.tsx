@@ -1,3 +1,4 @@
+
 import { MapPinIcon, CalendarIcon, MessageSquare, Calendar, Trash2, ImagePlus, Utensils, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -45,6 +46,7 @@ export const TruckCard = ({
   const [reviews, setReviews] = useState([
     {
       author: "John D.",
+      authorId: "user123", // Added authorId here
       rating: 4,
       comment: "Great tacos and friendly service!",
       date: "2 days ago",
@@ -85,6 +87,7 @@ export const TruckCard = ({
     setReviews([
       {
         author: "You",
+        authorId: user?.id || "anonymous", // Add authorId using current user or "anonymous" if not logged in
         rating: review.rating,
         comment: review.comment,
         date: "Just now",

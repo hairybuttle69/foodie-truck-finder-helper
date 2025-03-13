@@ -5,7 +5,7 @@ import { UserBadges } from "./badges/UserBadges";
 
 interface ReviewCardProps {
   author: string;
-  authorId: string; // Add authorId to link to user
+  authorId: string; // This is the required prop that was missing
   rating: number;
   comment: string;
   date: string;
